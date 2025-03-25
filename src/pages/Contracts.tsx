@@ -1,309 +1,403 @@
-
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import ContractForm from '@/components/shared/ContractForm';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole, Contract } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserRole, Contract } from '@/types';
-import { FileText, Plus, Search, Edit, Send, Archive, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  LayoutDashboard,
+  FileText,
+  CheckSquare,
+  MessageSquare,
+  Users,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Menu,
+  Plus,
+  Edit,
+  Trash2,
+  Copy,
+  Send,
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
-// Helper to generate mock contracts
-const generateMockContracts = (): Contract[] => {
-  const statuses = ['draft', 'active', 'archived'] as const;
-  return Array.from({ length: 8 }, (_, i) => ({
-    id: `contract-${i + 1}`,
-    title: [
-      'Contrato de Prestação de Serviços',
-      'Termo de Adesão',
-      'Contrato de Permanência',
-      'Acordo de Nível de Serviço (SLA)',
-    ][i % 4] + ` ${i + 1}`,
-    content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-    createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
-    createdBy: ['admin', 'manager'][Math.floor(Math.random() * 2)],
-    status: statuses[Math.floor(Math.random() * statuses.length)],
-  }));
-};
+interface ContractsProps {
+  // Define props if needed
+}
 
-const Contracts: React.FC = () => {
+const Contracts: React.FC<ContractsProps> = () => {
+  const navigate = useNavigate();
+  const { authState, isAuthorized, logout } = useAuth();
+
+  // State variables
   const [contracts, setContracts] = useState<Contract[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [newContractTitle, setNewContractTitle] = useState('');
+  const [newContractContent, setNewContractContent] = useState('');
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const contractsPerPage = 5;
 
+  // Mock data (replace with API calls later)
   useEffect(() => {
-    // Simulate fetching contracts
-    const fetchContracts = async () => {
-      setLoading(true);
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setContracts(generateMockContracts());
-      } catch (error) {
-        toast.error("Erro ao carregar contratos. Por favor, tente novamente.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchContracts();
+    // Simulate loading data from an API
+    setIsLoading(true);
+    setTimeout(() => {
+      const mockContracts: Contract[] = [
+        {
+          id: '1',
+          title: 'Contrato de Prestação de Serviços',
+          content: 'Este contrato estabelece os termos e condições...',
+          createdAt: new Date('2023-01-15'),
+          createdBy: 'João Silva',
+          status: 'active',
+        },
+        {
+          id: '2',
+          title: 'Contrato de Aluguel',
+          content: 'Este contrato estabelece os termos e condições para o aluguel...',
+          createdAt: new Date('2023-02-20'),
+          createdBy: 'Maria Souza',
+          status: 'draft',
+        },
+        {
+          id: '3',
+          title: 'Contrato de Compra e Venda',
+          content: 'Este contrato estabelece os termos e condições para a compra e venda...',
+          createdAt: new Date('2023-03-10'),
+          createdBy: 'Carlos Pereira',
+          status: 'archived',
+        },
+        {
+          id: '4',
+          title: 'Contrato de Confidencialidade',
+          content: 'Este contrato estabelece os termos e condições para a confidencialidade...',
+          createdAt: new Date('2023-04-01'),
+          createdBy: 'Ana Oliveira',
+          status: 'active',
+        },
+        {
+          id: '5',
+          title: 'Contrato de Trabalho',
+          content: 'Este contrato estabelece os termos e condições para o trabalho...',
+          createdAt: new Date('2023-05-05'),
+          createdBy: 'Pedro Santos',
+          status: 'active',
+        },
+        {
+          id: '6',
+          title: 'Contrato de Parceria',
+          content: 'Este contrato estabelece os termos e condições para a parceria...',
+          createdAt: new Date('2023-06-12'),
+          createdBy: 'Mariana Costa',
+          status: 'draft',
+        },
+        {
+          id: '7',
+          title: 'Contrato de Prestação de Serviços (TI)',
+          content: 'Este contrato estabelece os termos e condições para a prestação de serviços de TI...',
+          createdAt: new Date('2023-07-18'),
+          createdBy: 'Lucas Rodrigues',
+          status: 'archived',
+        },
+        {
+          id: '8',
+          title: 'Contrato de Consultoria',
+          content: 'Este contrato estabelece os termos e condições para a consultoria...',
+          createdAt: new Date('2023-08-25'),
+          createdBy: 'Fernanda Almeida',
+          status: 'active',
+        },
+        {
+          id: '9',
+          title: 'Contrato de Licença de Software',
+          content: 'Este contrato estabelece os termos e condições para a licença de software...',
+          createdAt: new Date('2023-09-30'),
+          createdBy: 'Ricardo Carvalho',
+          status: 'active',
+        },
+        {
+          id: '10',
+          title: 'Contrato de Manutenção',
+          content: 'Este contrato estabelece os termos e condições para a manutenção...',
+          createdAt: new Date('2023-10-01'),
+          createdBy: 'Juliana Gomes',
+          status: 'draft',
+        },
+      ];
+      setContracts(mockContracts);
+      setIsLoading(false);
+    }, 500);
   }, []);
 
-  const handleCreateContract = (data: { title: string; content: string; status: string; }) => {
+  // Pagination
+  const indexOfLastContract = currentPage * contractsPerPage;
+  const indexOfFirstContract = indexOfLastContract - contractsPerPage;
+  const currentContracts = contracts.slice(indexOfFirstContract, indexOfLastContract);
+
+  const totalPages = Math.ceil(contracts.length / contractsPerPage);
+
+  const handleNextPage = () => {
+    setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage(currentPage - 1);
+  };
+
+  // Handlers
+  const handleCreateContract = () => {
+    if (!newContractTitle || !newContractContent) {
+      toast.error('Por favor, preencha todos os campos.');
+      return;
+    }
+
     const newContract: Contract = {
-      id: `contract-${contracts.length + 1}`,
-      title: data.title,
-      content: data.content,
+      id: String(Date.now()), // Generate a unique ID
+      title: newContractTitle,
+      content: newContractContent,
       createdAt: new Date(),
-      createdBy: 'admin',
-      status: data.status as 'draft' | 'active' | 'archived',
+      createdBy: authState.user?.name || 'Admin',
+      status: 'draft',
     };
-    
-    setContracts([newContract, ...contracts]);
-    setShowCreateForm(false);
+
+    setContracts([...contracts, newContract]);
+    setNewContractTitle('');
+    setNewContractContent('');
+    toast.success('Contrato criado com sucesso!');
   };
 
-  const handleUpdateContract = (data: { title: string; content: string; status: string; }) => {
-    if (!editingContract) return;
-    
-    const updatedContracts = contracts.map(contract => 
-      contract.id === editingContract.id 
-        ? { 
-            ...contract, 
-            title: data.title,
-            content: data.content,
-            status: data.status as 'draft' | 'active' | 'archived',
-          } 
+  const handleEditContract = (contract: Contract) => {
+    setSelectedContract(contract);
+    setNewContractTitle(contract.title);
+    setNewContractContent(contract.content);
+    setIsEditing(true);
+  };
+
+  const handleUpdateContract = () => {
+    if (!newContractTitle || !newContractContent) {
+      toast.error('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    if (!selectedContract) return;
+
+    const updatedContracts = contracts.map(contract =>
+      contract.id === selectedContract.id
+        ? { ...contract, title: newContractTitle, content: newContractContent }
         : contract
     );
-    
-    setContracts(updatedContracts);
-    setEditingContract(null);
-  };
 
-  const handleSendWhatsApp = (phoneNumber: string) => {
-    // In a real app, this would call the WhatsApp API
-    console.log(`Sending contract to ${phoneNumber} via WhatsApp`);
-    // Implementation would be in a real app
-  };
-
-  const handleArchiveContract = (contractId: string) => {
-    const updatedContracts = contracts.map(contract => 
-      contract.id === contractId 
-        ? { ...contract, status: 'archived' } 
-        : contract
-    );
-    
     setContracts(updatedContracts);
-    toast.success("Contrato arquivado com sucesso!");
+    setSelectedContract(null);
+    setNewContractTitle('');
+    setNewContractContent('');
+    setIsEditing(false);
+    toast.success('Contrato atualizado com sucesso!');
   };
 
   const handleDeleteContract = (contractId: string) => {
-    const updatedContracts = contracts.filter(contract => contract.id !== contractId);
-    setContracts(updatedContracts);
-    toast.success("Contrato excluído com sucesso!");
+    setContracts(contracts.filter(contract => contract.id !== contractId));
+    toast.success('Contrato excluído com sucesso!');
   };
 
-  const filteredContracts = contracts.filter(contract => 
-    contract.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const getStatusBadge = (status: Contract['status']) => {
-    switch (status) {
-      case 'draft':
-        return <Badge variant="outline">Rascunho</Badge>;
-      case 'active':
-        return <Badge className="bg-green-500">Ativo</Badge>;
-      case 'archived':
-        return <Badge variant="secondary">Arquivado</Badge>;
-      default:
-        return null;
-    }
+  const handleCopyContract = (contract: Contract) => {
+    navigator.clipboard.writeText(contract.content);
+    toast.success('Contrato copiado para a área de transferência!');
   };
+
+  const handleSendTestMessage = (contract: Contract) => {
+    // Implement your logic to send a test message via WhatsApp
+    toast.info(`Enviando mensagem de teste para o contrato "${contract.title}"... (funcionalidade não implementada)`);
+  };
+
+  const handleCancelEdit = () => {
+    setSelectedContract(null);
+    setNewContractTitle('');
+    setNewContractContent('');
+    setIsEditing(false);
+  };
+
+  // Permissions
+  if (!authState.isAuthenticated) {
+    return navigate('/login');
+  }
+
+  if (!isAuthorized([UserRole.ADMIN, UserRole.MANAGER])) {
+    return navigate('/dashboard');
+  }
 
   return (
-    <DashboardLayout requiredRoles={[UserRole.ADMIN, UserRole.MANAGER, UserRole.USER]}>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Contratos</h1>
-            <p className="text-muted-foreground">
-              Gerencie seus modelos de contratos e termos
-            </p>
-          </div>
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Contrato
+    <DashboardLayout>
+      <div className="container py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Gerenciamento de Contratos</h1>
+          <Button onClick={() => navigate('/dashboard')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
           </Button>
         </div>
 
-        <div className="flex items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar contratos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="glassmorphism animate-pulse-slow">
-                <CardHeader className="space-y-2">
-                  <div className="h-5 w-3/4 bg-muted rounded"></div>
-                  <div className="h-4 w-1/2 bg-muted rounded"></div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="h-4 w-full bg-muted rounded"></div>
-                  <div className="h-4 w-full bg-muted rounded"></div>
-                  <div className="h-4 w-2/3 bg-muted rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <>
-            {filteredContracts.length === 0 ? (
-              <Card className="glassmorphism">
-                <CardContent className="flex flex-col items-center justify-center p-6">
-                  <FileText className="h-10 w-10 text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">Nenhum contrato encontrado</p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {searchQuery 
-                      ? "Tente ajustar sua busca ou criar um novo contrato." 
-                      : "Comece criando seu primeiro modelo de contrato."}
-                  </p>
-                  <Button onClick={() => setShowCreateForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Novo Contrato
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Criar Novo Contrato</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="contractTitle">Título do Contrato</Label>
+                <Input
+                  id="contractTitle"
+                  placeholder="Ex: Contrato de Prestação de Serviços"
+                  value={newContractTitle}
+                  onChange={(e) => setNewContractTitle(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="contractContent">Conteúdo do Contrato</Label>
+                <Textarea
+                  id="contractContent"
+                  placeholder="Ex: Este contrato estabelece os termos e condições..."
+                  value={newContractContent}
+                  onChange={(e) => setNewContractContent(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+              <div className="flex justify-end">
+                {isEditing ? (
+                  <>
+                    <Button variant="ghost" onClick={handleCancelEdit}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleUpdateContract}>
+                      Atualizar Contrato
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={handleCreateContract}>
+                    Criar Contrato
                   </Button>
-                </CardContent>
-              </Card>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Contratos Existentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredContracts.map((contract) => (
-                  <Card key={contract.id} className="glassmorphism hover-scale">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-md">{contract.title}</CardTitle>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-                                <path d="M3.625 7.5C3.625 8.12132 3.12132 8.625 2.5 8.625C1.87868 8.625 1.375 8.12132 1.375 7.5C1.375 6.87868 1.87868 6.375 2.5 6.375C3.12132 6.375 3.625 6.87868 3.625 7.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM13.625 7.5C13.625 8.12132 13.1213 8.625 12.5 8.625C11.8787 8.625 11.375 8.12132 11.375 7.5C11.375 6.87868 11.8787 6.375 12.5 6.375C13.1213 6.375 13.625 6.87868 13.625 7.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                              </svg>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditingContract(contract)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <Send className="h-4 w-4 mr-2" />
-                                  Enviar
-                                </DropdownMenuItem>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Enviar Contrato por WhatsApp</DialogTitle>
-                                </DialogHeader>
-                                <ContractForm
-                                  initialData={{
-                                    title: contract.title,
-                                    content: contract.content,
-                                    status: contract.status,
-                                  }}
-                                  onSendWhatsApp={handleSendWhatsApp}
-                                />
-                              </DialogContent>
-                            </Dialog>
-                            <DropdownMenuItem 
-                              onClick={() => handleArchiveContract(contract.id)}
-                              disabled={contract.status === 'archived'}
-                            >
-                              <Archive className="h-4 w-4 mr-2" />
-                              Arquivar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteContract(contract.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <CardDescription className="flex items-center justify-between">
-                        <span>Criado em {contract.createdAt.toLocaleDateString()}</span>
-                        {getStatusBadge(contract.status)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm line-clamp-3">
-                        {contract.content}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Título
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Conteúdo
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentContracts.map((contract) => (
+                      <tr key={contract.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{contract.title}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-500">
+                            {contract.content.length > 50
+                              ? `${contract.content.substring(0, 50)}...`
+                              : contract.content}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className={cn(
+                            "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                            contract.status === 'active' && "bg-green-100 text-green-800",
+                            contract.status === 'draft' && "bg-yellow-100 text-yellow-800",
+                            contract.status === 'archived' && "bg-red-100 text-red-800"
+                          )}>
+                            {contract.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditContract(contract)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleCopyContract(contract)}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleSendTestMessage(contract)}>
+                            <Send className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteContract(contract.id)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
-          </>
-        )}
+          </CardContent>
+          <CardFooter className="flex items-center justify-between px-6 py-4">
+            <span className="text-sm text-gray-500">
+              Página {currentPage} de {totalPages}
+            </span>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+              >
+                Próximo
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
       </div>
-
-      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Novo Contrato</DialogTitle>
-          </DialogHeader>
-          <ContractForm onSubmit={handleCreateContract} onSendWhatsApp={handleSendWhatsApp} />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={editingContract !== null} onOpenChange={(open) => !open && setEditingContract(null)}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Editar Contrato</DialogTitle>
-          </DialogHeader>
-          {editingContract && (
-            <ContractForm 
-              initialData={{
-                title: editingContract.title,
-                content: editingContract.content,
-                status: editingContract.status,
-              }}
-              onSubmit={handleUpdateContract}
-              onSendWhatsApp={handleSendWhatsApp}
-              isEditing
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 };

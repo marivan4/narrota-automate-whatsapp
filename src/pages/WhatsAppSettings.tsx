@@ -1,175 +1,133 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types';
+import { UserRole, WhatsAppConnection } from '@/types';
+import WhatsAppConnectionComponent from '@/components/shared/WhatsAppConnection';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
-import { toast } from "sonner";
+import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  LayoutDashboard,
-  FileText,
-  CheckSquare,
-  MessageSquare,
-  Users,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Menu,
-  Plus,
-  Edit,
-  Trash2,
-  Copy,
-  Send,
   ArrowLeft,
-  ArrowRight,
-  Loader2,
+  QrCode,
+  Settings,
+  Check,
+  Copy,
+  Key,
+  Smartphone,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 interface WhatsAppSettingsProps {
   // Define props if needed
 }
 
-interface Template {
-  id: string;
-  name: string;
-  content: string;
-}
-
 const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
   const navigate = useNavigate();
-  const { authState, isAuthorized, logout } = useAuth();
+  const { authState, isAuthorized } = useAuth();
+  
+  // State for API configuration
+  const [apiKey, setApiKey] = useState('');
+  const [instance, setInstance] = useState('');
+  const [serverUrl, setServerUrl] = useState('api.example.com');
+  const [connectionStatus, setConnectionStatus] = useState<WhatsAppConnection['status']>('disconnected');
+  const [savedConfig, setSavedConfig] = useState({
+    apiKey: '',
+    instance: '',
+    serverUrl: '',
+  });
 
-  // State variables
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [newTemplateName, setNewTemplateName] = useState('');
-  const [newTemplateContent, setNewTemplateContent] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const templatesPerPage = 5;
-
-  // Mock data (replace with API calls later)
+  // Load saved settings
   useEffect(() => {
-    // Simulate loading data from an API
-    setIsLoading(true);
-    setTimeout(() => {
-      const mockTemplates: Template[] = [
-        { id: '1', name: 'Boas Vindas', content: 'Olá, seja bem-vindo(a) à Narrota System!' },
-        { id: '2', name: 'Lembrete de Pagamento', content: 'Lembre-se de pagar sua fatura até o dia 10.' },
-        { id: '3', name: 'Confirmação de Agendamento', content: 'Seu agendamento foi confirmado para o dia 15.' },
-        { id: '4', name: 'Pesquisa de Satisfação', content: 'Responda nossa pesquisa e nos ajude a melhorar!' },
-        { id: '5', name: 'Promoção Exclusiva', content: 'Aproveite nossa promoção exclusiva para você!' },
-        { id: '6', name: 'Teste Template', content: 'Teste de template para verificar a formatação.' },
-        { id: '7', name: 'Template Longo', content: 'Este é um template longo para testar a quebra de linha e a exibição correta do conteúdo em diferentes dispositivos. Ele deve ser exibido corretamente mesmo que tenha várias linhas de texto.' },
-        { id: '8', name: 'Template com Variáveis', content: 'Olá, [nome]! Seu código de acesso é [codigo].' },
-        { id: '9', name: 'Template de Cobrança', content: 'Olá, [nome]! Seu boleto no valor de [valor] vence em [data].' },
-        { id: '10', name: 'Template de Suporte', content: 'Olá, [nome]! Precisa de ajuda? Entre em contato conosco!' },
-      ];
-      setTemplates(mockTemplates);
-      setIsLoading(false);
-    }, 500);
+    // In a real app, this would be loaded from a secure storage or API
+    // For demo, we'll use localStorage
+    const savedSettings = localStorage.getItem('whatsappSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setApiKey(settings.apiKey || '');
+      setInstance(settings.instance || '');
+      setServerUrl(settings.serverUrl || 'api.example.com');
+      setSavedConfig({
+        apiKey: settings.apiKey || '',
+        instance: settings.instance || '',
+        serverUrl: settings.serverUrl || 'api.example.com',
+      });
+    }
   }, []);
 
-  // Pagination
-  const indexOfLastTemplate = currentPage * templatesPerPage;
-  const indexOfFirstTemplate = indexOfLastTemplate - templatesPerPage;
-  const currentTemplates = templates.slice(indexOfFirstTemplate, indexOfLastTemplate);
-
-  const totalPages = Math.ceil(templates.length / templatesPerPage);
-
-  const handleNextPage = () => {
-    setCurrentPage(currentPage + 1);
+  // Track connection status from child component
+  const handleStatusChange = (status: WhatsAppConnection['status']) => {
+    setConnectionStatus(status);
+    
+    // If connected, save the instance
+    if (status === 'connected' && connectionStatus !== 'connected') {
+      // In a real implementation, this would come from the API response
+      const newInstance = `instance_${Math.floor(Math.random() * 1000)}`;
+      setInstance(newInstance);
+      
+      // Update saved config
+      const updatedConfig = {
+        ...savedConfig,
+        instance: newInstance,
+      };
+      setSavedConfig(updatedConfig);
+      localStorage.setItem('whatsappSettings', JSON.stringify(updatedConfig));
+      
+      toast.success(`Instância WhatsApp conectada: ${newInstance}`);
+    }
   };
 
-  const handlePrevPage = () => {
-    setCurrentPage(currentPage - 1);
-  };
-
-  // Handlers
-  const handleCreateTemplate = () => {
-    if (!newTemplateName || !newTemplateContent) {
-      toast.error('Por favor, preencha todos os campos.');
+  // Save API configuration
+  const saveApiConfig = () => {
+    // Validate inputs
+    if (!apiKey.trim()) {
+      toast.error('Por favor, insira uma API Key válida');
       return;
     }
 
-    const newTemplate: Template = {
-      id: String(Date.now()), // Generate a unique ID
-      name: newTemplateName,
-      content: newTemplateContent,
+    if (!serverUrl.trim()) {
+      toast.error('Por favor, insira uma URL de servidor válida');
+      return;
+    }
+
+    // Save configuration
+    const newConfig = {
+      apiKey,
+      instance: savedConfig.instance, // Keep existing instance if available
+      serverUrl,
     };
-
-    setTemplates([...templates, newTemplate]);
-    setNewTemplateName('');
-    setNewTemplateContent('');
-    toast.success('Template criado com sucesso!');
+    
+    setSavedConfig(newConfig);
+    localStorage.setItem('whatsappSettings', JSON.stringify(newConfig));
+    toast.success('Configurações da API salvas com sucesso');
   };
 
-  const handleEditTemplate = (template: Template) => {
-    setSelectedTemplate(template);
-    setNewTemplateName(template.name);
-    setNewTemplateContent(template.content);
-    setIsEditing(true);
+  // Copy value to clipboard
+  const copyToClipboard = (value: string, label: string) => {
+    navigator.clipboard.writeText(value);
+    toast.success(`${label} copiado para a área de transferência`);
   };
 
-  const handleUpdateTemplate = () => {
-    if (!newTemplateName || !newTemplateContent) {
-      toast.error('Por favor, preencha todos os campos.');
-      return;
+  // Generate test message URL
+  const getTestMessageUrl = () => {
+    if (!savedConfig.apiKey || !savedConfig.instance || !savedConfig.serverUrl) {
+      return null;
     }
 
-    if (!selectedTemplate) return;
-
-    const updatedTemplates = templates.map(template =>
-      template.id === selectedTemplate.id
-        ? { ...template, name: newTemplateName, content: newTemplateContent }
-        : template
-    );
-
-    setTemplates(updatedTemplates);
-    setSelectedTemplate(null);
-    setNewTemplateName('');
-    setNewTemplateContent('');
-    setIsEditing(false);
-    toast.success('Template atualizado com sucesso!');
+    return `https://${savedConfig.serverUrl}/message/sendText/${savedConfig.instance}`;
   };
 
-  const handleDeleteTemplate = (templateId: string) => {
-    setTemplates(templates.filter(template => template.id !== templateId));
-    toast.success('Template excluído com sucesso!');
-  };
-
-  const handleCancelEdit = () => {
-    setSelectedTemplate(null);
-    setNewTemplateName('');
-    setNewTemplateContent('');
-    setIsEditing(false);
-  };
-
-  const handleCopyTemplate = (template: Template) => {
-    navigator.clipboard.writeText(template.content);
-    toast.success('Template copiado para a área de transferência!');
-  };
-
-  const handleSendTestMessage = (template: Template) => {
-    // Implement your logic to send a test message via WhatsApp
-    toast.info(`Enviando mensagem de teste para o template "${template.name}"... (funcionalidade não implementada)`);
-  };
-
-  // Permissions
+  // Permissions check
   if (!authState.isAuthenticated) {
     return navigate('/login');
   }
@@ -182,141 +140,259 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
     <DashboardLayout>
       <div className="container py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Configurações WhatsApp</h1>
+          <h1 className="text-2xl font-bold">Configurações do WhatsApp</h1>
           <Button onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Criar Novo Template</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="templateName">Nome do Template</Label>
-                <Input
-                  id="templateName"
-                  placeholder="Ex: Boas Vindas"
-                  value={newTemplateName}
-                  onChange={(e) => setNewTemplateName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="templateContent">Conteúdo do Template</Label>
-                <Textarea
-                  id="templateContent"
-                  placeholder="Ex: Olá, seja bem-vindo(a)!"
-                  value={newTemplateContent}
-                  onChange={(e) => setNewTemplateContent(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div className="flex justify-end">
-                {isEditing ? (
-                  <>
-                    <Button variant="ghost" onClick={handleCancelEdit}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleUpdateTemplate}>
-                      Atualizar Template
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={handleCreateTemplate}>
-                    Criar Template
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="connection" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="connection" className="flex items-center gap-2">
+              <QrCode className="h-4 w-4" />
+              <span>Conexão WhatsApp</span>
+            </TabsTrigger>
+            <TabsTrigger value="api" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>Configuração da API</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Templates Existentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nome
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Conteúdo
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ações
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {currentTemplates.map((template) => (
-                      <tr key={template.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{template.name}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-500">
-                            {template.content.length > 50
-                              ? `${template.content.substring(0, 50)}...`
-                              : template.content}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <Button variant="ghost" size="icon" onClick={() => handleEditTemplate(template)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleCopyTemplate(template)}>
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleSendTestMessage(template)}>
-                            <Send className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplate(template.id)}>
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          <TabsContent value="connection" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Conectar WhatsApp</CardTitle>
+                <CardDescription>
+                  Escaneie o código QR com seu WhatsApp para conectar ao sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WhatsAppConnectionComponent onStatusChange={handleStatusChange} />
+              </CardContent>
+              {connectionStatus === 'connected' && (
+                <CardFooter className="flex flex-col items-start space-y-4">
+                  <div className="w-full">
+                    <Label htmlFor="instance">ID da Instância</Label>
+                    <div className="flex mt-1">
+                      <Input
+                        id="instance"
+                        value={savedConfig.instance}
+                        readOnly
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="ml-2"
+                        onClick={() => copyToClipboard(savedConfig.instance, 'ID da Instância')}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardFooter>
+              )}
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Status da Conexão</CardTitle>
+                <CardDescription>
+                  Informações sobre a conexão atual do WhatsApp
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-4">
+                  <div className={`w-3 h-3 rounded-full ${
+                    connectionStatus === 'connected' ? 'bg-green-500' :
+                    connectionStatus === 'connecting' ? 'bg-yellow-500' :
+                    connectionStatus === 'error' ? 'bg-red-500' :
+                    'bg-gray-400'
+                  }`} />
+                  <p className="text-sm font-medium">
+                    {connectionStatus === 'connected' ? 'Conectado' :
+                     connectionStatus === 'connecting' ? 'Conectando...' :
+                     connectionStatus === 'error' ? 'Erro de conexão' :
+                     'Desconectado'}
+                  </p>
+                </div>
+
+                {savedConfig.instance && (
+                  <div className="mt-4 p-4 bg-muted rounded-md">
+                    <p className="text-sm text-muted-foreground mb-2">Detalhes da conexão:</p>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">Instância:</span>
+                        <span className="text-sm">{savedConfig.instance}</span>
+                      </div>
+                      {savedConfig.serverUrl && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Servidor:</span>
+                          <span className="text-sm">{savedConfig.serverUrl}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="api" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuração da API</CardTitle>
+                <CardDescription>
+                  Configure os parâmetros da API do WhatsApp
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="server-url">URL do Servidor</Label>
+                  <Input
+                    id="server-url"
+                    placeholder="api.example.com"
+                    value={serverUrl}
+                    onChange={(e) => setServerUrl(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="api-key" className="flex items-center gap-2">
+                    <Key className="h-4 w-4" />
+                    <span>API Key</span>
+                  </Label>
+                  <Input
+                    id="api-key"
+                    type="password"
+                    placeholder="••••••••••••••••"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="instance-id" className="flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    <span>ID da Instância</span>
+                  </Label>
+                  <div className="flex">
+                    <Input
+                      id="instance-id"
+                      placeholder="Conecte o WhatsApp para obter uma instância"
+                      value={instance}
+                      onChange={(e) => setInstance(e.target.value)}
+                      className="flex-1"
+                    />
+                    {savedConfig.instance && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="ml-2"
+                        onClick={() => {
+                          setInstance(savedConfig.instance);
+                        }}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  {!savedConfig.instance && (
+                    <p className="text-sm text-muted-foreground">
+                      Conecte o WhatsApp na aba "Conexão WhatsApp" para gerar uma instância automaticamente
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => {
+                  setApiKey(savedConfig.apiKey);
+                  setServerUrl(savedConfig.serverUrl);
+                  setInstance(savedConfig.instance);
+                }}>
+                  Cancelar
+                </Button>
+                <Button onClick={saveApiConfig}>
+                  Salvar Configurações
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {savedConfig.apiKey && savedConfig.instance && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Teste de Integração</CardTitle>
+                  <CardDescription>
+                    Use estas informações para testar a integração com WhatsApp
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-muted rounded-md">
+                    <h4 className="text-sm font-medium mb-2">Exemplo de requisição:</h4>
+                    <div className="bg-card p-3 rounded-md text-xs overflow-x-auto">
+                      <pre>
+{`fetch("${getTestMessageUrl()}", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "apikey": "${savedConfig.apiKey}"
+  },
+  body: JSON.stringify({
+    number: "5511999999999",
+    text: "Mensagem de teste do Narrota System",
+    delay: 0,
+    linkPreview: false
+  })
+})`}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="mb-2 block">URL da API</Label>
+                      <div className="flex">
+                        <Input
+                          value={getTestMessageUrl() || ''}
+                          readOnly
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="ml-2"
+                          onClick={() => copyToClipboard(getTestMessageUrl() || '', 'URL da API')}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="mb-2 block">API Key</Label>
+                      <div className="flex">
+                        <Input
+                          value={savedConfig.apiKey}
+                          type="password"
+                          readOnly
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="ml-2"
+                          onClick={() => copyToClipboard(savedConfig.apiKey, 'API Key')}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-          <CardFooter className="flex items-center justify-between px-6 py-4">
-            <span className="text-sm text-gray-500">
-              Página {currentPage} de {totalPages}
-            </span>
-            <div className="space-x-2">
-              <Button
-                variant="outline"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                Próximo
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
