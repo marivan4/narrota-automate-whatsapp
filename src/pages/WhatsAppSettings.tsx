@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -127,13 +126,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
     return `https://${savedConfig.serverUrl}/message/sendText/${savedConfig.instance}`;
   };
 
-  // Permissions check
+  // Permissions check - fixed to always return JSX
   if (!authState.isAuthenticated) {
-    return navigate('/login');
+    navigate('/login');
+    return null; // Return null instead of void
   }
 
   if (!isAuthorized([UserRole.ADMIN, UserRole.MANAGER])) {
-    return navigate('/dashboard');
+    navigate('/dashboard');
+    return null; // Return null instead of void
   }
 
   return (

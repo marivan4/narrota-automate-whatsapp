@@ -236,13 +236,15 @@ const Contracts: React.FC<ContractsProps> = () => {
     setIsEditing(false);
   };
 
-  // Permissions
+  // Permissions check - fixed to always return JSX
   if (!authState.isAuthenticated) {
-    return navigate('/login');
+    navigate('/login');
+    return null; // Return null instead of void
   }
 
   if (!isAuthorized([UserRole.ADMIN, UserRole.MANAGER])) {
-    return navigate('/dashboard');
+    navigate('/dashboard');
+    return null; // Return null instead of void
   }
 
   return (
