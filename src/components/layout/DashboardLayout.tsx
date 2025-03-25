@@ -15,6 +15,8 @@ import {
   ChevronRight,
   LogOut,
   Menu,
+  User,
+  Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +43,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.USER] 
     },
     { 
+      name: 'Clientes', 
+      path: '/clients', 
+      icon: Users, 
+      roles: [UserRole.ADMIN, UserRole.MANAGER] 
+    },
+    { 
       name: 'Contratos', 
       path: '/contracts', 
       icon: FileText, 
@@ -51,6 +59,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       path: '/checklists', 
       icon: CheckSquare, 
       roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.USER] 
+    },
+    { 
+      name: 'Faturas', 
+      path: '/invoices', 
+      icon: Receipt, 
+      roles: [UserRole.ADMIN, UserRole.MANAGER] 
     },
     { 
       name: 'WhatsApp', 
@@ -72,7 +86,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     },
   ];
 
-  // Redirect if not authenticated
+  // Use useEffect for navigation if needed
   if (!authState.isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -144,6 +158,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <span>{item.name}</span>
                 </Link>
               ))}
+              <Link
+                to="/profile"
+                className={cn(
+                  "flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  location.pathname === "/profile"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground hover:bg-secondary"
+                )}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <User className="h-5 w-5" />
+                <span>Meu Perfil</span>
+              </Link>
             </div>
 
             <div className="absolute bottom-4 left-0 right-0 px-6">
@@ -206,6 +233,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {!sidebarCollapsed && <span>{item.name}</span>}
               </Link>
             ))}
+            <Link
+              to="/profile"
+              className={cn(
+                "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                sidebarCollapsed ? "justify-center" : "space-x-3",
+                location.pathname === "/profile"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-secondary"
+              )}
+              title={sidebarCollapsed ? "Meu Perfil" : undefined}
+            >
+              <User className="h-5 w-5" />
+              {!sidebarCollapsed && <span>Meu Perfil</span>}
+            </Link>
           </div>
         </div>
 

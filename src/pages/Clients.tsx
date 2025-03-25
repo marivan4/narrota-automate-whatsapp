@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from "sonner";
+import ClientForm, { ClientFormValues } from '@/components/forms/ClientForm';
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,6 +32,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Table,
@@ -48,6 +60,11 @@ interface Client {
   name: string;
   email: string;
   phone: string;
+  document?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
   role: 'admin' | 'client' | 'viewer';
   createdAt: Date;
   contracts: {
@@ -72,17 +89,41 @@ const Clients: React.FC<ClientsProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const clientsPerPage = 10;
 
   // Mock data (replace with API calls later)
   useEffect(() => {
+    // Check authentication first
+    if (!authState.isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (!isAuthorized([UserRole.ADMIN, UserRole.MANAGER])) {
+      navigate('/dashboard');
+      return;
+    }
+
+    loadClients();
+  }, [authState.isAuthenticated, isAuthorized, navigate]);
+
+  const loadClients = () => {
     setIsLoading(true);
+    // Simulate API call
     setTimeout(() => {
       const mockClients: Client[] = Array.from({ length: 25 }).map((_, index) => ({
         id: `client-${index + 1}`,
         name: `Cliente ${index + 1}`,
         email: `cliente${index + 1}@exemplo.com`,
         phone: `(11) 9${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+        document: `${Math.floor(100000000 + Math.random() * 900000000)}-${Math.floor(10 + Math.random() * 90)}`,
+        address: `Rua Exemplo, ${Math.floor(100 + Math.random() * 900)}`,
+        city: 'São Paulo',
+        state: 'SP',
+        zipCode: `${Math.floor(10000 + Math.random() * 90000)}-${Math.floor(100 + Math.random() * 900)}`,
         role: index % 5 === 0 ? 'admin' : index % 3 === 0 ? 'viewer' : 'client',
         createdAt: new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000)),
         contracts: Array.from({ length: Math.floor(Math.random() * 5) }).map((_, cIndex) => ({
@@ -95,13 +136,14 @@ const Clients: React.FC<ClientsProps> = () => {
       setClients(mockClients);
       setIsLoading(false);
     }, 800);
-  }, []);
+  };
 
   // Filter clients based on search term
   const filteredClients = clients.filter(client => 
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.phone.includes(searchTerm)
+    client.phone.includes(searchTerm) ||
+    (client.document && client.document.includes(searchTerm))
   );
 
   // Pagination
@@ -118,7 +160,77 @@ const Clients: React.FC<ClientsProps> = () => {
     setCurrentPage(prev => Math.max(prev - 1, 1));
   };
 
-  // Handlers
+  // Client CRUD handlers
+  const handleCreateClient = async (data: ClientFormValues) => {
+    setIsSaving(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newClient: Client = {
+        id: `client-${Date.now()}`,
+        ...data,
+        createdAt: new Date(),
+        contracts: []
+      };
+      
+      setClients(prevClients => [...prevClients, newClient]);
+      setIsCreating(false);
+      toast.success('Cliente cadastrado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao cadastrar cliente. Tente novamente.');
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditClient = (client: Client) => {
+    setSelectedClient(client);
+    setIsEditing(true);
+  };
+
+  const handleUpdateClient = async (data: ClientFormValues) => {
+    if (!selectedClient) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const updatedClients = clients.map(client => 
+        client.id === selectedClient.id
+          ? { ...client, ...data }
+          : client
+      );
+      
+      setClients(updatedClients);
+      setIsEditing(false);
+      setSelectedClient(null);
+      toast.success('Cliente atualizado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao atualizar cliente. Tente novamente.');
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setClients(prevClients => prevClients.filter(client => client.id !== clientId));
+      toast.success('Cliente excluído com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir cliente. Tente novamente.');
+      console.error(error);
+    }
+  };
+
   const handleViewClient = (client: Client) => {
     setSelectedClient(client);
   };
@@ -139,16 +251,30 @@ const Clients: React.FC<ClientsProps> = () => {
     }, 1500);
   };
 
-  // Permissions check
-  if (!authState.isAuthenticated) {
-    navigate('/login');
-    return null;
-  }
+  const handleCreateContract = (clientId: string) => {
+    toast.info(`Preparando novo contrato para o cliente...`);
+    // Here we would redirect to contract creation page or open a modal
+    navigate(`/contracts/new?clientId=${clientId}`);
+  };
 
-  if (!isAuthorized([UserRole.ADMIN, UserRole.MANAGER])) {
-    navigate('/dashboard');
-    return null;
-  }
+  // Get client's current geolocation for IP tracking
+  const captureClientGeolocation = async () => {
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+      
+      return {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error getting geolocation:', error);
+      return null;
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -174,7 +300,7 @@ const Clients: React.FC<ClientsProps> = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button>
+              <Button onClick={() => setIsCreating(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Novo Cliente
               </Button>
@@ -195,6 +321,7 @@ const Clients: React.FC<ClientsProps> = () => {
                         <TableHead>Nome</TableHead>
                         <TableHead>E-mail</TableHead>
                         <TableHead>Telefone</TableHead>
+                        <TableHead>CPF/CNPJ</TableHead>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Contratos</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
@@ -207,6 +334,7 @@ const Clients: React.FC<ClientsProps> = () => {
                             <TableCell className="font-medium">{client.name}</TableCell>
                             <TableCell>{client.email}</TableCell>
                             <TableCell>{client.phone}</TableCell>
+                            <TableCell>{client.document}</TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 client.role === 'admin' 
@@ -255,6 +383,22 @@ const Clients: React.FC<ClientsProps> = () => {
                                           <p>{client.phone}</p>
                                         </div>
                                         <div>
+                                          <p className="text-sm font-medium text-muted-foreground">CPF/CNPJ</p>
+                                          <p>{client.document}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-muted-foreground">Endereço</p>
+                                          <p>{client.address}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-muted-foreground">Cidade/UF</p>
+                                          <p>{client.city}/{client.state}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-muted-foreground">CEP</p>
+                                          <p>{client.zipCode}</p>
+                                        </div>
+                                        <div>
                                           <p className="text-sm font-medium text-muted-foreground">Tipo de Usuário</p>
                                           <p className="capitalize">{client.role}</p>
                                         </div>
@@ -269,14 +413,32 @@ const Clients: React.FC<ClientsProps> = () => {
                                       </div>
                                       
                                       <div className="flex justify-end space-x-2 pt-4">
-                                        <Button variant="outline">
+                                        <Button variant="outline" onClick={() => handleEditClient(client)}>
                                           <Edit className="h-4 w-4 mr-2" />
                                           Editar
                                         </Button>
-                                        <Button variant="destructive">
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Excluir
-                                        </Button>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button variant="destructive">
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Excluir
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente {client.name} e todos os dados associados.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleDeleteClient(client.id)}>
+                                                Confirmar
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
                                       </div>
                                     </TabsContent>
                                     
@@ -327,7 +489,7 @@ const Clients: React.FC<ClientsProps> = () => {
                                       )}
                                       
                                       <div className="flex justify-end pt-4">
-                                        <Button>
+                                        <Button onClick={() => handleCreateContract(client.id)}>
                                           <FileText className="h-4 w-4 mr-2" />
                                           Novo Contrato
                                         </Button>
@@ -341,19 +503,37 @@ const Clients: React.FC<ClientsProps> = () => {
                                 </DialogContent>
                               </Dialog>
 
-                              <Button variant="ghost" size="icon">
+                              <Button variant="ghost" size="icon" onClick={() => handleEditClient(client)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
                               
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente {client.name} e todos os dados associados.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteClient(client.id)}>
+                                      Confirmar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-10">
+                          <TableCell colSpan={7} className="text-center py-10">
                             <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                             <p className="text-lg text-muted-foreground">Nenhum cliente encontrado</p>
                           </TableCell>
@@ -395,6 +575,53 @@ const Clients: React.FC<ClientsProps> = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Create Client Dialog */}
+      <Dialog open={isCreating} onOpenChange={setIsCreating}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
+            <DialogDescription>
+              Preencha os dados do cliente para cadastrá-lo no sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <ClientForm 
+            onSubmit={handleCreateClient} 
+            isLoading={isSaving}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+            <DialogDescription>
+              Atualize os dados do cliente.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedClient && (
+            <ClientForm 
+              onSubmit={handleUpdateClient} 
+              initialData={{
+                name: selectedClient.name,
+                email: selectedClient.email,
+                phone: selectedClient.phone,
+                document: selectedClient.document || '',
+                address: selectedClient.address || '',
+                city: selectedClient.city || '',
+                state: selectedClient.state || '',
+                zipCode: selectedClient.zipCode || '',
+                role: selectedClient.role,
+              }}
+              isLoading={isSaving}
+              isEditing
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
     </DashboardLayout>
   );
 };

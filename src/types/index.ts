@@ -1,3 +1,4 @@
+
 export enum UserRole {
   ADMIN = "admin",
   MANAGER = "manager",
@@ -22,6 +23,47 @@ export interface Contract {
   createdAt: Date;
   createdBy: string;
   status: 'active' | 'draft' | 'archived';
+  clientId?: string; // Added to link contracts to clients
+  vehicleInfo?: VehicleInfo; // Added for vehicle information
+  capturedIp?: string; // Added for IP tracking
+  geolocation?: GeolocationData; // Added for location tracking
+  signatureData?: SignatureData; // Added for signature data
+}
+
+export interface VehicleInfo {
+  model: string;
+  plate: string;
+  trackerModel: string;
+  trackerImei: string;
+  installationLocation?: string;
+}
+
+export interface GeolocationData {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  timestamp: string;
+}
+
+export interface SignatureData {
+  signature: string; // Base64 image of signature
+  timestamp: string;
+  ipAddress: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  document?: string; // CPF/CNPJ
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  role: 'admin' | 'client' | 'viewer';
+  createdAt: Date;
+  contracts: Contract[];
 }
 
 export interface Checklist {
@@ -46,4 +88,21 @@ export interface WhatsAppConnection {
   apiKey?: string;
   errorMessage?: string;
   lastUpdated: Date;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: UserRole;
+  avatar?: string;
+  whatsappConfig?: WhatsAppConfig;
+}
+
+export interface WhatsAppConfig {
+  apiKey: string;
+  instance: string;
+  serverUrl: string;
+  lastConnected?: Date;
 }
