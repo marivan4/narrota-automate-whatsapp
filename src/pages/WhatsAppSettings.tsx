@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole, WhatsAppConnection } from '@/types';
-import WhatsAppConnectionComponent from '@/components/shared/WhatsAppConnection';
 import {
   Card,
   CardContent,
@@ -25,22 +24,21 @@ import {
   Copy,
   Key,
   Smartphone,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
-interface WhatsAppSettingsProps {
-  // Define props if needed
-}
-
-const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
+const WhatsAppSettings: React.FC = () => {
   const navigate = useNavigate();
   const { authState, isAuthorized } = useAuth();
   
   // State for API configuration
   const [apiKey, setApiKey] = useState('');
   const [instance, setInstance] = useState('');
-  const [serverUrl, setServerUrl] = useState('api.example.com');
+  const [serverUrl, setServerUrl] = useState('https://evolutionapi.gpstracker-16.com.br');
   const [connectionStatus, setConnectionStatus] = useState<WhatsAppConnection['status']>('disconnected');
+  const [isLoading, setIsLoading] = useState(false);
   const [savedConfig, setSavedConfig] = useState({
     apiKey: '',
     instance: '',
@@ -56,11 +54,11 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
       const settings = JSON.parse(savedSettings);
       setApiKey(settings.apiKey || '');
       setInstance(settings.instance || '');
-      setServerUrl(settings.serverUrl || 'api.example.com');
+      setServerUrl(settings.serverUrl || 'https://evolutionapi.gpstracker-16.com.br');
       setSavedConfig({
         apiKey: settings.apiKey || '',
         instance: settings.instance || '',
-        serverUrl: settings.serverUrl || 'api.example.com',
+        serverUrl: settings.serverUrl || 'https://evolutionapi.gpstracker-16.com.br',
       });
     }
   }, []);
@@ -69,7 +67,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
   const handleStatusChange = (status: WhatsAppConnection['status']) => {
     setConnectionStatus(status);
     
-    // Note: Removed auto-instance generation - now using manual input only
     if (status === 'connected' && connectionStatus !== 'connected') {
       toast.success(`WhatsApp conectado com sucesso!`);
     }
@@ -97,6 +94,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
     
     setSavedConfig(newConfig);
     localStorage.setItem('whatsappSettings', JSON.stringify(newConfig));
+    localStorage.setItem('whatsapp_config', JSON.stringify(newConfig)); // Also save for the QR code component
     toast.success('Configurações da API salvas com sucesso');
   };
 
@@ -112,7 +110,75 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
       return null;
     }
 
-    return `https://${savedConfig.serverUrl}/message/sendText/${savedConfig.instance}`;
+    return `${savedConfig.serverUrl}/message/sendText/${savedConfig.instance}`;
+  };
+
+  const disconnectWhatsApp = async () => {
+    if (!savedConfig.instance || !savedConfig.apiKey || !savedConfig.serverUrl) {
+      toast.error('Configuração incompleta. Salve a configuração primeiro.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // In a real app, this would call the actual API
+      // const response = await fetch(`${savedConfig.serverUrl}/instance/logout/${savedConfig.instance}`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'apikey': savedConfig.apiKey,
+      //     'Content-Type': 'application/json'
+      //   }
+      // });
+      // const data = await response.json();
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast.success('WhatsApp desconectado com sucesso!');
+      setConnectionStatus('disconnected');
+    } catch (error) {
+      console.error('Error disconnecting WhatsApp:', error);
+      toast.error('Erro ao desconectar WhatsApp');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const restartInstance = async () => {
+    if (!savedConfig.instance || !savedConfig.apiKey || !savedConfig.serverUrl) {
+      toast.error('Configuração incompleta. Salve a configuração primeiro.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // In a real app, this would call the actual API
+      // const response = await fetch(`${savedConfig.serverUrl}/instance/instance/restart/${savedConfig.instance}`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'apikey': savedConfig.apiKey,
+      //     'Content-Type': 'application/json'
+      //   }
+      // });
+      // const data = await response.json();
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast.success('Instância reiniciada com sucesso!');
+      setConnectionStatus('connecting');
+      
+      // After a short delay, simulate the connection being re-established
+      setTimeout(() => {
+        setConnectionStatus('connected');
+        toast.success('Conexão reestabelecida');
+      }, 3000);
+    } catch (error) {
+      console.error('Error restarting WhatsApp instance:', error);
+      toast.error('Erro ao reiniciar instância do WhatsApp');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Permissions check - fixed to always return JSX
@@ -150,60 +216,150 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
           </TabsList>
 
           <TabsContent value="connection" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Conectar WhatsApp</CardTitle>
-                <CardDescription>
-                  Escaneie o código QR com seu WhatsApp para conectar ao sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <WhatsAppConnectionComponent onStatusChange={handleStatusChange} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Status da Conexão</CardTitle>
-                <CardDescription>
-                  Informações sobre a conexão atual do WhatsApp
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-4">
-                  <div className={`w-3 h-3 rounded-full ${
-                    connectionStatus === 'connected' ? 'bg-green-500' :
-                    connectionStatus === 'connecting' ? 'bg-yellow-500' :
-                    connectionStatus === 'error' ? 'bg-red-500' :
-                    'bg-gray-400'
-                  }`} />
-                  <p className="text-sm font-medium">
-                    {connectionStatus === 'connected' ? 'Conectado' :
-                     connectionStatus === 'connecting' ? 'Conectando...' :
-                     connectionStatus === 'error' ? 'Erro de conexão' :
-                     'Desconectado'}
-                  </p>
-                </div>
-
-                {instance && (
-                  <div className="mt-4 p-4 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground mb-2">Detalhes da conexão:</p>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">Instância:</span>
-                        <span className="text-sm">{instance}</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Conectar WhatsApp</CardTitle>
+                  <CardDescription>
+                    Gerencie a conexão do WhatsApp com o sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-3 h-3 rounded-full ${
+                          connectionStatus === 'connected' ? 'bg-green-500' :
+                          connectionStatus === 'connecting' ? 'bg-yellow-500' :
+                          connectionStatus === 'error' ? 'bg-red-500' :
+                          'bg-gray-400'
+                        }`} />
+                        <span className="text-sm font-medium">
+                          {connectionStatus === 'connected' ? 'Conectado' :
+                          connectionStatus === 'connecting' ? 'Conectando...' :
+                          connectionStatus === 'error' ? 'Erro de conexão' :
+                          'Desconectado'}
+                        </span>
                       </div>
-                      {serverUrl && (
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Servidor:</span>
-                          <span className="text-sm">{serverUrl}</span>
+                      
+                      {connectionStatus === 'connected' && (
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={disconnectWhatsApp}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Desconectar'}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={restartInstance}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reiniciar'}
+                          </Button>
                         </div>
                       )}
                     </div>
+                    
+                    {instance && (
+                      <div className="mt-4 p-4 bg-muted rounded-md">
+                        <p className="text-sm text-muted-foreground mb-2">Detalhes da conexão:</p>
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium">Instância:</span>
+                            <span className="text-sm">{instance}</span>
+                          </div>
+                          {serverUrl && (
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium">Servidor:</span>
+                              <span className="text-sm">{serverUrl}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="pt-4">
+                      <Button 
+                        className="w-full" 
+                        onClick={() => navigate('/whatsapp-connect')}
+                      >
+                        <QrCode className="mr-2 h-4 w-4" />
+                        Ir para página de QR Code
+                      </Button>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gerenciamento de Instância</CardTitle>
+                  <CardDescription>
+                    Gerencie sua instância do WhatsApp
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-md border border-blue-100">
+                    <h4 className="text-sm font-medium text-blue-800 mb-2">Ações disponíveis:</h4>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• Desconectar seu WhatsApp da instância</li>
+                      <li>• Reiniciar a instância em caso de problemas</li>
+                      <li>• Gerar um novo QR Code para conectar</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={disconnectWhatsApp}
+                      disabled={isLoading || connectionStatus !== 'connected'}
+                    >
+                      Desconectar WhatsApp
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={restartInstance}
+                      disabled={isLoading || connectionStatus !== 'connected'}
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Reiniciar Instância
+                    </Button>
+                  </div>
+                  
+                  {savedConfig.instance && (
+                    <div className="mt-4 p-4 bg-muted rounded-md">
+                      <p className="text-sm font-medium mb-2">URLs da API:</p>
+                      <div className="space-y-2 text-xs text-muted-foreground">
+                        <div>
+                          <p>URL para conectar (QR Code):</p>
+                          <code className="bg-slate-100 p-1 rounded text-slate-800 text-xs block overflow-x-auto mt-1">
+                            {savedConfig.serverUrl}/instance/connect/{savedConfig.instance}
+                          </code>
+                        </div>
+                        <div>
+                          <p>URL para desconectar:</p>
+                          <code className="bg-slate-100 p-1 rounded text-slate-800 text-xs block overflow-x-auto mt-1">
+                            {savedConfig.serverUrl}/instance/logout/{savedConfig.instance}
+                          </code>
+                        </div>
+                        <div>
+                          <p>URL para reiniciar:</p>
+                          <code className="bg-slate-100 p-1 rounded text-slate-800 text-xs block overflow-x-auto mt-1">
+                            {savedConfig.serverUrl}/instance/instance/restart/{savedConfig.instance}
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="api" className="space-y-6">
@@ -219,7 +375,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
                   <Label htmlFor="server-url">URL do Servidor</Label>
                   <Input
                     id="server-url"
-                    placeholder="api.example.com"
+                    placeholder="https://evolutionapi.gpstracker-16.com.br"
                     value={serverUrl}
                     onChange={(e) => setServerUrl(e.target.value)}
                   />
@@ -290,7 +446,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
   },
   body: JSON.stringify({
     number: "5511999999999",
-    text: "Mensagem de teste do Narrota System",
+    text: "Mensagem de teste do Sistema",
     delay: 0,
     linkPreview: false
   })
@@ -337,6 +493,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
                         </Button>
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <Button variant="outline" className="w-full" asChild>
+                      <a href="https://evolutionapi.gpstracker-16.com.br/docs" target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Ver Documentação da API
+                      </a>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

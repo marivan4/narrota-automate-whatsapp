@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, RefreshCw, QrCode, Check } from 'lucide-react';
+import { Loader2, RefreshCw, QrCode, Check, LogOut, RotateCw } from 'lucide-react';
 
 interface WhatsAppQRCodeProps {
   onConnect?: () => void;
@@ -39,8 +39,7 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
   const checkConnection = async (config: typeof formData) => {
     setIsLoading(true);
     try {
-      // Simulate API call to check connection status
-      // In a real app, you would call the WhatsApp API to check if the instance is connected
+      // In a real implementation, this would call the API to check connection status
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Mock response - in a real app this would be the API response
@@ -76,12 +75,21 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
       // Store the config
       localStorage.setItem('whatsapp_config', JSON.stringify(formData));
 
-      // Simulate API call to generate QR code
-      // In a real app, this would call the WhatsApp API endpoint
+      // In a real implementation, this would call the actual API
+      // const response = await fetch(`${formData.serverUrl}/instance/connect/${formData.instance}`, {
+      //   method: 'GET',
+      //   headers: {
+      //     'apikey': formData.apiKey,
+      //     'Content-Type': 'application/json'
+      //   }
+      // });
+      // const data = await response.json();
+      // const qrCodeBase64 = data.qrcode.base64;
+      
+      // For demo, simulate API response
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock QR code (base64 encoded image) - in a real app this would come from the API
-      // This is a simple QR code that says "Lovable WhatsApp Demo"
+      // This is a mock QR code
       setQrCode('data:image/png;base64,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');
 
       toast.success('QR Code gerado com sucesso!');
@@ -93,16 +101,63 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
     }
   };
 
+  const disconnectWhatsApp = async () => {
+    setIsLoading(true);
+    try {
+      // In a real implementation, this would call the API to disconnect
+      // const response = await fetch(`${formData.serverUrl}/instance/logout/${formData.instance}`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'apikey': formData.apiKey,
+      //     'Content-Type': 'application/json'
+      //   }
+      // });
+      // await response.json();
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setIsConnected(false);
+      setQrCode(null);
+      toast.success('WhatsApp desconectado com sucesso!');
+    } catch (error) {
+      console.error('Error disconnecting WhatsApp:', error);
+      toast.error('Erro ao desconectar WhatsApp.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const restartInstance = async () => {
+    setIsLoading(true);
+    try {
+      // In a real implementation, this would call the API to restart the instance
+      // const response = await fetch(`${formData.serverUrl}/instance/instance/restart/${formData.instance}`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'apikey': formData.apiKey,
+      //     'Content-Type': 'application/json'
+      //   }
+      // });
+      // await response.json();
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast.success('Instância reiniciada com sucesso!');
+      // After restart, check connection again
+      setTimeout(() => checkConnection(formData), 1000);
+    } catch (error) {
+      console.error('Error restarting WhatsApp instance:', error);
+      toast.error('Erro ao reiniciar instância do WhatsApp.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleDisconnect = () => {
-    setIsConnected(false);
-    setQrCode(null);
-    toast.info('WhatsApp desconectado.');
-    if (onConnect) onConnect();
   };
 
   return (
@@ -124,9 +179,34 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
               Instância: {formData.instance}<br />
               Servidor: {formData.serverUrl}
             </p>
-            <Button variant="outline" onClick={handleDisconnect}>
-              Desconectar
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={disconnectWhatsApp}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="mr-2 h-4 w-4" />
+                )}
+                Desconectar
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={restartInstance}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCw className="mr-2 h-4 w-4" />
+                )}
+                Reiniciar Instância
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -185,9 +265,15 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
 
             {qrCode && (
               <div className="mt-6 flex flex-col items-center">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Escaneie o código QR com seu WhatsApp para conectar
-                </p>
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mb-4 w-full">
+                  <h4 className="text-sm font-medium mb-2 text-blue-800">Como conectar o WhatsApp:</h4>
+                  <ol className="text-sm text-blue-700 list-decimal ml-4 space-y-1">
+                    <li>Abra o aplicativo WhatsApp no seu celular</li>
+                    <li>Toque em Menu (três pontos) &gt; WhatsApp Web</li>
+                    <li>Aponte a câmera para o código QR abaixo</li>
+                    <li>Aguarde a conexão ser estabelecida</li>
+                  </ol>
+                </div>
                 <div className="border p-4 rounded-md bg-white">
                   <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64" />
                 </div>

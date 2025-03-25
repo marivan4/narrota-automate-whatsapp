@@ -1,229 +1,320 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { UserRole } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
-import { FileText, CheckSquare, Users, AlertCircle, MessageSquare, BarChart3 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Download } from 'lucide-react';
+
+// Mock data for the charts
+const lineData = [
+  { name: 'Mar-24', ativacoes: 50, cancelamentos: 10 },
+  { name: 'Dez-24', ativacoes: 60, cancelamentos: 20 },
+  { name: 'Jan-25', ativacoes: 70, cancelamentos: 30 },
+  { name: 'Fev-25', ativacoes: 40, cancelamentos: 10 },
+];
+
+const barData = [
+  { name: 'Dual C', ativo: 0, estoque: 0, preCancelamento: 0 },
+  { name: 'M2M Padrão', ativo: 180, estoque: 50, preCancelamento: 0 },
+];
+
+const overviewData = [
+  { name: 'Ativo', value: 70 },
+  { name: 'Estoque', value: 20 },
+  { name: 'Pré-cancelamento', value: 10 },
+];
+
+const deviceStatusData = [
+  { name: 'Ativo', value: 80 },
+  { name: 'Inativo', value: 20 },
+];
+
+const inventoryData = [
+  { name: 'M2M Padrão', value: 90 },
+  { name: 'Dual C', value: 10 },
+];
+
+// Colors for the charts
+const COLORS = {
+  ativo: '#9b57e9', // Purple
+  estoque: '#ea384c', // Red
+  preCancelamento: '#f97316', // Orange
+  ativacoes: '#9b57e9', // Purple
+  cancelamentos: '#ea384c', // Red
+  inativo: '#ea384c', // Red
+  dualC: '#ea384c', // Red
+  m2mPadrao: '#9b57e9', // Purple
+};
+
+const OVERVIEW_COLORS = ['#9b57e9', '#ea384c', '#f97316'];
+const DEVICE_STATUS_COLORS = ['#4ade80', '#ea384c']; // Green and Red
+const INVENTORY_COLORS = ['#9b57e9', '#ea384c']; // Purple and Red
 
 const Dashboard: React.FC = () => {
-  const { authState } = useAuth();
-  const [stats, setStats] = useState({
-    contracts: 0,
-    checklists: 0,
-    customers: 0,
-    pendingInvoices: 0,
-    whatsappStatus: 'disconnected' as 'disconnected' | 'connected' | 'error',
-  });
-
-  useEffect(() => {
-    // Simulate fetching dashboard data
-    const fetchDashboardData = async () => {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock data
-      setStats({
-        contracts: Math.floor(Math.random() * 50) + 10,
-        checklists: Math.floor(Math.random() * 30) + 5,
-        customers: Math.floor(Math.random() * 100) + 50,
-        pendingInvoices: Math.floor(Math.random() * 20) + 3,
-        whatsappStatus: Math.random() > 0.7 ? 'connected' : 'disconnected',
-      });
-    };
-    
-    fetchDashboardData();
-  }, []);
-
-  const getWhatsAppStatusBadge = () => {
-    switch (stats.whatsappStatus) {
-      case 'connected':
-        return <Badge className="bg-green-500">Conectado</Badge>;
-      case 'disconnected':
-        return <Badge variant="outline">Desconectado</Badge>;
-      case 'error':
-        return <Badge variant="destructive">Erro</Badge>;
-      default:
-        return null;
-    }
-  };
-
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Bem-vindo{authState.user?.name ? `, ${authState.user.name}` : ''}! Aqui está uma visão geral do seu sistema.
-          </p>
+      <div className="container mx-auto p-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <Button className="bg-green-500 hover:bg-green-600">
+            <Download className="mr-2 h-4 w-4" />
+            Baixar Planilha
+          </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="glassmorphism">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Contratos
-              </CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Overview Chart */}
+          <Card className="bg-blue-900 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white">Resumo geral</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.contracts}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.contracts > 20 ? 'Contratos ativos em uso' : 'Contratos disponíveis'}
-              </p>
-              <div className="mt-4">
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/contracts">Gerenciar</Link>
-                </Button>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={overviewData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      paddingAngle={0}
+                      dataKey="value"
+                    >
+                      {overviewData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={OVERVIEW_COLORS[index % OVERVIEW_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value, name) => [`${value}%`, name]}
+                      contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center mt-2 text-xs gap-4">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-purple-400 rounded-sm"></div>
+                  <span>Ativo</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-red-500 rounded-sm"></div>
+                  <span>Estoque</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-orange-500 rounded-sm"></div>
+                  <span>Pré-cancelamento</span>
+                </div>
               </div>
             </CardContent>
           </Card>
-          
-          <Card className="glassmorphism">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Checklists
-              </CardTitle>
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.checklists}</div>
-              <p className="text-xs text-muted-foreground">
-                Checklists ativos no sistema
-              </p>
-              <div className="mt-4">
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/checklists">Gerenciar</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="glassmorphism">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Clientes
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.customers}</div>
-              <p className="text-xs text-muted-foreground">
-                Clientes cadastrados
-              </p>
-              <div className="mt-4">
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/customers">Visualizar</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="glassmorphism">
-            <CardHeader>
-              <CardTitle>Status do WhatsApp</CardTitle>
-              <CardDescription>
-                Acompanhe o status da integração com WhatsApp
-              </CardDescription>
+          {/* Bar Chart */}
+          <Card className="bg-blue-900 text-white md:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white">Linhas por família e status</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                  <span>WhatsApp</span>
+            <CardContent>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={barData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="name" stroke="#94a3b8" />
+                    <YAxis stroke="#94a3b8" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }}
+                    />
+                    <Bar dataKey="ativo" name="Ativo" fill={COLORS.ativo} barSize={30} />
+                    <Bar dataKey="estoque" name="Estoque" fill={COLORS.estoque} barSize={30} />
+                    <Bar dataKey="preCancelamento" name="Pré-cancelamento" fill={COLORS.preCancelamento} barSize={30} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center mt-2 text-xs gap-4">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-purple-400 rounded-sm"></div>
+                  <span>Ativo</span>
                 </div>
-                {getWhatsAppStatusBadge()}
-              </div>
-              
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/whatsapp-settings">
-                  Configurar WhatsApp
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="glassmorphism">
-            <CardHeader>
-              <CardTitle>Faturas Pendentes</CardTitle>
-              <CardDescription>
-                Faturas aguardando pagamento
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="h-5 w-5 text-amber-500" />
-                  <span>
-                    {stats.pendingInvoices} {stats.pendingInvoices === 1 ? 'fatura pendente' : 'faturas pendentes'}
-                  </span>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-red-500 rounded-sm"></div>
+                  <span>Estoque</span>
                 </div>
-                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-200">
-                  Atenção
-                </Badge>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-orange-500 rounded-sm"></div>
+                  <span>Pré-cancelamento</span>
+                </div>
               </div>
-              
-              <div className="text-sm text-muted-foreground">
-                {stats.pendingInvoices > 0 ? (
-                  <p>Você tem faturas aguardando pagamento. Envie lembretes pelo WhatsApp para aumentar suas chances de recebimento.</p>
-                ) : (
-                  <p>Não há faturas pendentes no momento.</p>
-                )}
-              </div>
-              
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/invoices">
-                  Gerenciar Faturas
-                </Link>
-              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {authState.user?.role === UserRole.ADMIN && (
-          <Card className="glassmorphism">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5" />
-                <span>Visão Geral do Sistema</span>
-              </CardTitle>
-              <CardDescription>
-                Estatísticas e métricas do sistema (visível apenas para administradores)
-              </CardDescription>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Line Chart */}
+          <Card className="bg-blue-900 text-white md:col-span-3">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white">Ativações e cancelamentos por mês</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Usuários Ativos</p>
-                  <p className="text-2xl font-semibold">{Math.floor(Math.random() * 10) + 3}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Notificações Enviadas</p>
-                  <p className="text-2xl font-semibold">{Math.floor(Math.random() * 200) + 50}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Taxa de Entrega</p>
-                  <p className="text-2xl font-semibold">{Math.floor(Math.random() * 10) + 90}%</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Uso de Armazenamento</p>
-                  <p className="text-2xl font-semibold">{Math.floor(Math.random() * 100) + 200} MB</p>
-                </div>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={lineData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="name" stroke="#94a3b8" />
+                    <YAxis stroke="#94a3b8" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="ativacoes" 
+                      name="Ativações" 
+                      stroke={COLORS.ativacoes} 
+                      strokeWidth={3} 
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cancelamentos" 
+                      name="Cancelamentos" 
+                      stroke={COLORS.cancelamentos} 
+                      strokeWidth={3} 
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-              
-              <div className="mt-6">
-                <Button asChild>
-                  <Link to="/reports">Ver Relatórios Detalhados</Link>
-                </Button>
+              <div className="flex justify-center mt-2 text-xs gap-4">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-purple-400 rounded-sm"></div>
+                  <span>Ativações</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-red-500 rounded-sm"></div>
+                  <span>Cancelamentos</span>
+                </div>
               </div>
             </CardContent>
           </Card>
-        )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Inventory Pie Chart */}
+          <Card className="bg-blue-900 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white">Estoque por família</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={inventoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      paddingAngle={0}
+                      dataKey="value"
+                    >
+                      {inventoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={INVENTORY_COLORS[index % INVENTORY_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value, name) => [`${value}%`, name]}
+                      contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center mt-2 text-xs gap-4">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-purple-400 rounded-sm"></div>
+                  <span>M2M Padrão</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-red-500 rounded-sm"></div>
+                  <span>Dual C</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Device Status Pie Chart */}
+          <Card className="bg-blue-900 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white">Status dos Dispositivos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={deviceStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      paddingAngle={0}
+                      dataKey="value"
+                    >
+                      {deviceStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={DEVICE_STATUS_COLORS[index % DEVICE_STATUS_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value, name) => [`${value}%`, name]}
+                      contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center mt-2 text-xs gap-4">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-green-500 rounded-sm"></div>
+                  <span>Ativo</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 bg-red-500 rounded-sm"></div>
+                  <span>Inativo</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Download Button Card */}
+          <Card className="bg-green-500 hover:bg-green-600 text-white flex items-center justify-center cursor-pointer">
+            <CardContent className="flex flex-col items-center justify-center h-full py-12">
+              <Download className="h-12 w-12 mb-4" />
+              <h3 className="text-xl font-semibold">Baixar Planilha</h3>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );
