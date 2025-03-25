@@ -14,6 +14,7 @@ import WhatsAppSettings from "./pages/WhatsAppSettings";
 import UsersManagement from "./pages/UsersManagement";
 import Invoices from "./pages/Invoices";
 import Settings from "./pages/Settings";
+import Clients from "./pages/Clients";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/checklists" element={<Checklists />} />
             <Route path="/whatsapp-settings" element={<WhatsAppSettings />} />
             <Route path="/users" element={<UsersManagement />} />
+            <Route path="/clients" element={<Clients />} />
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
