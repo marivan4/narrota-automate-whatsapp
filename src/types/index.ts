@@ -5,15 +5,20 @@ export enum UserRole {
   USER = "user",
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+}
+
 export interface AuthState {
   isAuthenticated: boolean;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-  } | null;
+  user: User | null;
   token: string | null;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 export interface Contract {
@@ -69,16 +74,19 @@ export interface Client {
 export interface Checklist {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   items: ChecklistItem[];
   createdAt: Date;
   createdBy: string;
+  status?: 'active' | 'draft' | 'archived';
 }
 
 export interface ChecklistItem {
   id: string;
   text: string;
   completed: boolean;
+  required?: boolean;
+  title?: string; // Added for backward compatibility
 }
 
 export interface WhatsAppConnection {

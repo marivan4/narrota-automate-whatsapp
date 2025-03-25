@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, UserRole, AuthState } from '@/types';
+import { UserRole, AuthState, User } from '@/types';
 import { toast } from "sonner";
 
 interface AuthContextProps {
@@ -45,7 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user: null,
     isAuthenticated: false,
     isLoading: true,
-    error: null
+    error: null,
+    token: null
   });
 
   useEffect(() => {
@@ -58,7 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user,
           isAuthenticated: true,
           isLoading: false,
-          error: null
+          error: null,
+          token: null
         });
       } catch (error) {
         // Invalid stored user
@@ -67,7 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user: null,
           isAuthenticated: false,
           isLoading: false,
-          error: null
+          error: null,
+          token: null
         });
       }
     } else {
@@ -100,7 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user: userWithoutPassword,
         isAuthenticated: true,
         isLoading: false,
-        error: null
+        error: null,
+        token: null
       });
 
       toast.success(`Bem-vindo, ${userWithoutPassword.name}!`);
@@ -109,7 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user: null,
         isAuthenticated: false,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to login'
+        error: error instanceof Error ? error.message : 'Failed to login',
+        token: null
       });
       toast.error('Falha ao fazer login. Verifique suas credenciais.');
     }
@@ -121,7 +126,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user: null,
       isAuthenticated: false,
       isLoading: false,
-      error: null
+      error: null,
+      token: null
     });
     toast.info('Você foi desconectado com sucesso.');
   };

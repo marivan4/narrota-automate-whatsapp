@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole, Checklist } from '@/types';
+import { UserRole, Checklist, ChecklistItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,9 +59,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '1',
           title: 'Checklist de Instalação',
           items: [
-            { id: '1-1', title: 'Verificar equipamentos', required: true },
-            { id: '1-2', title: 'Testar conexão', required: true },
-            { id: '1-3', title: 'Configurar software', required: false },
+            { id: '1-1', text: 'Verificar equipamentos', completed: false, required: true },
+            { id: '1-2', text: 'Testar conexão', completed: false, required: true },
+            { id: '1-3', text: 'Configurar software', completed: false, required: false },
           ],
           createdAt: new Date('2023-01-10'),
           createdBy: 'João Silva',
@@ -71,9 +71,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '2',
           title: 'Checklist de Segurança',
           items: [
-            { id: '2-1', title: 'Verificar extintores', required: true },
-            { id: '2-2', title: 'Testar alarmes', required: true },
-            { id: '2-3', title: 'Inspecionar saídas de emergência', required: true },
+            { id: '2-1', text: 'Verificar extintores', completed: false, required: true },
+            { id: '2-2', text: 'Testar alarmes', completed: false, required: true },
+            { id: '2-3', text: 'Inspecionar saídas de emergência', completed: false, required: true },
           ],
           createdAt: new Date('2023-02-15'),
           createdBy: 'Maria Oliveira',
@@ -83,9 +83,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '3',
           title: 'Checklist de Integração',
           items: [
-            { id: '3-1', title: 'Configurar API', required: true },
-            { id: '3-2', title: 'Testar comunicação entre módulos', required: true },
-            { id: '3-3', title: 'Validar dados', required: true },
+            { id: '3-1', text: 'Configurar API', completed: false, required: true },
+            { id: '3-2', text: 'Testar comunicação entre módulos', completed: false, required: true },
+            { id: '3-3', text: 'Validar dados', completed: false, required: true },
           ],
           createdAt: new Date('2023-03-20'),
           createdBy: 'Carlos Pereira',
@@ -95,9 +95,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '4',
           title: 'Checklist de Testes',
           items: [
-            { id: '4-1', title: 'Executar testes unitários', required: true },
-            { id: '4-2', title: 'Realizar testes de integração', required: true },
-            { id: '4-3', title: 'Efetuar testes de usabilidade', required: false },
+            { id: '4-1', text: 'Executar testes unitários', completed: false, required: true },
+            { id: '4-2', text: 'Realizar testes de integração', completed: false, required: true },
+            { id: '4-3', text: 'Efetuar testes de usabilidade', completed: false, required: false },
           ],
           createdAt: new Date('2023-04-25'),
           createdBy: 'Ana Souza',
@@ -107,9 +107,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '5',
           title: 'Checklist de Implantação',
           items: [
-            { id: '5-1', title: 'Preparar ambiente de produção', required: true },
-            { id: '5-2', title: 'Realizar backup dos dados', required: true },
-            { id: '5-3', title: 'Monitorar a implantação', required: true },
+            { id: '5-1', text: 'Preparar ambiente de produção', completed: false, required: true },
+            { id: '5-2', text: 'Realizar backup dos dados', completed: false, required: true },
+            { id: '5-3', text: 'Monitorar a implantação', completed: false, required: true },
           ],
           createdAt: new Date('2023-05-30'),
           createdBy: 'Ricardo Alves',
@@ -119,9 +119,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '6',
           title: 'Checklist de Manutenção',
           items: [
-            { id: '6-1', title: 'Verificar logs do sistema', required: true },
-            { id: '6-2', title: 'Aplicar patches de segurança', required: true },
-            { id: '6-3', title: 'Otimizar o desempenho do sistema', required: false },
+            { id: '6-1', text: 'Verificar logs do sistema', completed: false, required: true },
+            { id: '6-2', text: 'Aplicar patches de segurança', completed: false, required: true },
+            { id: '6-3', text: 'Otimizar o desempenho do sistema', completed: false, required: false },
           ],
           createdAt: new Date('2023-06-05'),
           createdBy: 'Patrícia Santos',
@@ -131,9 +131,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '7',
           title: 'Checklist de Backup',
           items: [
-            { id: '7-1', title: 'Agendar backups automáticos', required: true },
-            { id: '7-2', title: 'Testar a restauração dos backups', required: true },
-            { id: '7-3', title: 'Armazenar backups em local seguro', required: true },
+            { id: '7-1', text: 'Agendar backups automáticos', completed: false, required: true },
+            { id: '7-2', text: 'Testar a restauração dos backups', completed: false, required: true },
+            { id: '7-3', text: 'Armazenar backups em local seguro', completed: false, required: true },
           ],
           createdAt: new Date('2023-07-10'),
           createdBy: 'Fernando Costa',
@@ -143,9 +143,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '8',
           title: 'Checklist de Auditoria',
           items: [
-            { id: '8-1', title: 'Verificar conformidade com as normas', required: true },
-            { id: '8-2', title: 'Analisar os registros de acesso', required: true },
-            { id: '8-3', title: 'Identificar vulnerabilidades', required: true },
+            { id: '8-1', text: 'Verificar conformidade com as normas', completed: false, required: true },
+            { id: '8-2', text: 'Analisar os registros de acesso', completed: false, required: true },
+            { id: '8-3', text: 'Identificar vulnerabilidades', completed: false, required: true },
           ],
           createdAt: new Date('2023-08-15'),
           createdBy: 'Amanda Oliveira',
@@ -155,9 +155,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '9',
           title: 'Checklist de Desempenho',
           items: [
-            { id: '9-1', title: 'Monitorar o uso de recursos', required: true },
-            { id: '9-2', title: 'Identificar gargalos', required: true },
-            { id: '9-3', title: 'Ajustar configurações', required: false },
+            { id: '9-1', text: 'Monitorar o uso de recursos', completed: false, required: true },
+            { id: '9-2', text: 'Identificar gargalos', completed: false, required: true },
+            { id: '9-3', text: 'Ajustar configurações', completed: false, required: false },
           ],
           createdAt: new Date('2023-09-20'),
           createdBy: 'Rafael Pereira',
@@ -167,9 +167,9 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           id: '10',
           title: 'Checklist de Acessibilidade',
           items: [
-            { id: '10-1', title: 'Verificar contraste de cores', required: true },
-            { id: '10-2', title: 'Testar a navegação por teclado', required: true },
-            { id: '10-3', title: 'Utilizar alternativas de texto para imagens', required: true },
+            { id: '10-1', text: 'Verificar contraste de cores', completed: false, required: true },
+            { id: '10-2', text: 'Testar a navegação por teclado', completed: false, required: true },
+            { id: '10-3', text: 'Utilizar alternativas de texto para imagens', completed: false, required: true },
           ],
           createdAt: new Date('2023-10-25'),
           createdBy: 'Juliana Souza',
@@ -196,7 +196,6 @@ const Checklists: React.FC<ChecklistsProps> = () => {
     setCurrentPage(currentPage - 1);
   };
 
-  // Handlers
   const handleCreateChecklist = () => {
     if (!newChecklistName || !newChecklistContent) {
       toast.error('Por favor, preencha todos os campos.');
