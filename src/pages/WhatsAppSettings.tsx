@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,21 +69,9 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
   const handleStatusChange = (status: WhatsAppConnection['status']) => {
     setConnectionStatus(status);
     
-    // If connected, save the instance
+    // Note: Removed auto-instance generation - now using manual input only
     if (status === 'connected' && connectionStatus !== 'connected') {
-      // In a real implementation, this would come from the API response
-      const newInstance = `instance_${Math.floor(Math.random() * 1000)}`;
-      setInstance(newInstance);
-      
-      // Update saved config
-      const updatedConfig = {
-        ...savedConfig,
-        instance: newInstance,
-      };
-      setSavedConfig(updatedConfig);
-      localStorage.setItem('whatsappSettings', JSON.stringify(updatedConfig));
-      
-      toast.success(`Instância WhatsApp conectada: ${newInstance}`);
+      toast.success(`WhatsApp conectado com sucesso!`);
     }
   };
 
@@ -102,7 +91,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
     // Save configuration
     const newConfig = {
       apiKey,
-      instance: savedConfig.instance, // Keep existing instance if available
+      instance,
       serverUrl,
     };
     
@@ -171,29 +160,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
               <CardContent>
                 <WhatsAppConnectionComponent onStatusChange={handleStatusChange} />
               </CardContent>
-              {connectionStatus === 'connected' && (
-                <CardFooter className="flex flex-col items-start space-y-4">
-                  <div className="w-full">
-                    <Label htmlFor="instance">ID da Instância</Label>
-                    <div className="flex mt-1">
-                      <Input
-                        id="instance"
-                        value={savedConfig.instance}
-                        readOnly
-                        className="flex-1"
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="ml-2"
-                        onClick={() => copyToClipboard(savedConfig.instance, 'ID da Instância')}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardFooter>
-              )}
             </Card>
 
             <Card>
@@ -219,18 +185,18 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
                   </p>
                 </div>
 
-                {savedConfig.instance && (
+                {instance && (
                   <div className="mt-4 p-4 bg-muted rounded-md">
                     <p className="text-sm text-muted-foreground mb-2">Detalhes da conexão:</p>
                     <div className="grid grid-cols-1 gap-2">
                       <div className="flex justify-between">
                         <span className="text-sm font-medium">Instância:</span>
-                        <span className="text-sm">{savedConfig.instance}</span>
+                        <span className="text-sm">{instance}</span>
                       </div>
-                      {savedConfig.serverUrl && (
+                      {serverUrl && (
                         <div className="flex justify-between">
                           <span className="text-sm font-medium">Servidor:</span>
-                          <span className="text-sm">{savedConfig.serverUrl}</span>
+                          <span className="text-sm">{serverUrl}</span>
                         </div>
                       )}
                     </div>
@@ -278,32 +244,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = () => {
                     <Smartphone className="h-4 w-4" />
                     <span>ID da Instância</span>
                   </Label>
-                  <div className="flex">
-                    <Input
-                      id="instance-id"
-                      placeholder="Conecte o WhatsApp para obter uma instância"
-                      value={instance}
-                      onChange={(e) => setInstance(e.target.value)}
-                      className="flex-1"
-                    />
-                    {savedConfig.instance && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="ml-2"
-                        onClick={() => {
-                          setInstance(savedConfig.instance);
-                        }}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {!savedConfig.instance && (
-                    <p className="text-sm text-muted-foreground">
-                      Conecte o WhatsApp na aba "Conexão WhatsApp" para gerar uma instância automaticamente
-                    </p>
-                  )}
+                  <Input
+                    id="instance-id"
+                    placeholder="Digite o ID da instância"
+                    value={instance}
+                    onChange={(e) => setInstance(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Digite a sua instância. Você também pode escanear o código QR na aba "Conexão WhatsApp" para gerar uma instância nova.
+                  </p>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">

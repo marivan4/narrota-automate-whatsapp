@@ -12,6 +12,8 @@ import Contracts from "./pages/Contracts";
 import Checklists from "./pages/Checklists";
 import WhatsAppSettings from "./pages/WhatsAppSettings";
 import UsersManagement from "./pages/UsersManagement";
+import Invoices from "./pages/Invoices";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/checklists" element={<Checklists />} />
             <Route path="/whatsapp-settings" element={<WhatsAppSettings />} />
             <Route path="/users" element={<UsersManagement />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
