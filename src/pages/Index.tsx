@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
+import { FileText, CheckSquare, MessageSquare } from 'lucide-react';
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
