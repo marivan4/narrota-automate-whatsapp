@@ -11,11 +11,13 @@ import Dashboard from "./pages/Dashboard";
 import Contracts from "./pages/Contracts";
 import Checklists from "./pages/Checklists";
 import WhatsAppSettings from "./pages/WhatsAppSettings";
+import WhatsAppConnect from "./pages/WhatsAppConnect";
 import UsersManagement from "./pages/UsersManagement";
 import Invoices from "./pages/Invoices";
 import Settings from "./pages/Settings";
 import Clients from "./pages/Clients";
 import Profile from "./pages/Profile";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,9 +36,11 @@ const App = () => (
             <Route path="/contracts" element={<Contracts />} />
             <Route path="/checklists" element={<Checklists />} />
             <Route path="/whatsapp-settings" element={<WhatsAppSettings />} />
+            <Route path="/whatsapp-connect" element={<WhatsAppConnect />} />
             <Route path="/users" element={<UsersManagement />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/invoices" element={<Invoices />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

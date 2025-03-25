@@ -114,3 +114,56 @@ export interface WhatsAppConfig {
   serverUrl: string;
   lastConnected?: Date;
 }
+
+export interface Invoice {
+  id: string;
+  clientId: string;
+  clientName: string;
+  amount: number;
+  dueDate: Date;
+  status: 'paid' | 'pending' | 'overdue' | 'cancelled';
+  createdAt: Date;
+  paidAt?: Date;
+  description?: string;
+  items?: InvoiceItem[];
+  contract?: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Vehicle {
+  id: string;
+  clientId: string;
+  model: string;
+  plate: string;
+  chassis?: string;
+  color?: string;
+  year?: string;
+  trackerInfo: {
+    model: string;
+    imei: string;
+    installationDate?: string;
+    installationLocation?: string;
+  };
+  createdAt: Date;
+}
+
+export interface Report {
+  id: string;
+  title: string;
+  type: 'revenue' | 'clients' | 'contracts' | 'vehicles' | 'invoices';
+  dateRange: {
+    start: Date;
+    end: Date;
+  };
+  data: any; // This would depend on the report type
+  createdAt: Date;
+  createdBy: string;
+  format?: 'pdf' | 'csv' | 'excel';
+}
