@@ -8,50 +8,58 @@ import { toast } from 'sonner';
 import { Loader2, RefreshCw, QrCode, Check, LogOut, RotateCw } from 'lucide-react';
 
 interface WhatsAppQRCodeProps {
+  baseUrl: string;
+  defaultApiKey?: string;
+  defaultInstance?: string;
   onConnect?: () => void;
+  onConfigChange?: (config: { baseUrl: string; apiKey: string; instance: string }) => void;
 }
 
-const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
+const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ 
+  baseUrl, 
+  defaultApiKey = '', 
+  defaultInstance = '', 
+  onConnect, 
+  onConfigChange 
+}) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    apiKey: '',
-    instance: '',
-    serverUrl: '',
+    apiKey: defaultApiKey,
+    instance: defaultInstance,
+    baseUrl: baseUrl,
   });
 
   useEffect(() => {
-    // Check if there's stored connection data
-    const storedConfig = localStorage.getItem('whatsapp_config');
-    if (storedConfig) {
-      try {
-        const config = JSON.parse(storedConfig);
-        setFormData(config);
-        // If we have a stored config, check if it's still connected
-        checkConnection(config);
-      } catch (error) {
-        console.error('Error parsing stored WhatsApp config:', error);
-      }
+    if (defaultInstance && defaultApiKey) {
+      checkConnection();
     }
-  }, []);
+  }, [defaultInstance, defaultApiKey]);
 
-  const checkConnection = async (config: typeof formData) => {
+  const checkConnection = async () => {
+    if (!formData.instance || !formData.apiKey) {
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // In a real implementation, this would call the API to check connection status
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await fetch(`${formData.baseUrl}/instance/connectionState/${formData.instance}`, {
+        method: 'GET',
+        headers: {
+          'apikey': formData.apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      // Mock response - in a real app this would be the API response
-      const mockConnected = Math.random() > 0.5;
-      setIsConnected(mockConnected);
+      const data = await response.json();
       
-      if (mockConnected) {
-        toast.success('WhatsApp conectado!');
+      if (data?.state === 'open' || data?.state === 'connected') {
+        setIsConnected(true);
         if (onConnect) onConnect();
+        toast.success('WhatsApp conectado!');
       } else {
-        // If not connected, try to generate a new QR code
-        generateQRCode();
+        setIsConnected(false);
       }
     } catch (error) {
       console.error('Error checking WhatsApp connection:', error);
@@ -66,33 +74,33 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
     setIsLoading(true);
     try {
       // Validate form data
-      if (!formData.apiKey || !formData.instance || !formData.serverUrl) {
+      if (!formData.apiKey || !formData.instance) {
         toast.error('Preencha todos os campos para gerar o QR Code.');
         setIsLoading(false);
         return;
       }
 
-      // Store the config
-      localStorage.setItem('whatsapp_config', JSON.stringify(formData));
+      // Notify parent component about config change
+      if (onConfigChange) {
+        onConfigChange(formData);
+      }
 
-      // In a real implementation, this would call the actual API
-      // const response = await fetch(`${formData.serverUrl}/instance/connect/${formData.instance}`, {
-      //   method: 'GET',
-      //   headers: {
-      //     'apikey': formData.apiKey,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // const data = await response.json();
-      // const qrCodeBase64 = data.qrcode.base64;
+      // Call the actual API
+      const response = await fetch(`${formData.baseUrl}/instance/connect/${formData.instance}`, {
+        method: 'GET',
+        headers: {
+          'apikey': formData.apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      // For demo, simulate API response
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // This is a mock QR code
-      setQrCode('data:image/png;base64,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');
-
-      toast.success('QR Code gerado com sucesso!');
+      const data = await response.json();
+      if (data && data.base64) {
+        setQrCode(data.base64);
+        toast.success('QR Code gerado com sucesso!');
+      } else {
+        throw new Error('QR Code não recebido da API');
+      }
     } catch (error) {
       console.error('Error generating WhatsApp QR code:', error);
       toast.error('Erro ao gerar QR Code do WhatsApp.');
@@ -104,18 +112,15 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
   const disconnectWhatsApp = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, this would call the API to disconnect
-      // const response = await fetch(`${formData.serverUrl}/instance/logout/${formData.instance}`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'apikey': formData.apiKey,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // await response.json();
+      const response = await fetch(`${formData.baseUrl}/instance/logout/${formData.instance}`, {
+        method: 'POST',
+        headers: {
+          'apikey': formData.apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const data = await response.json();
       
       setIsConnected(false);
       setQrCode(null);
@@ -131,22 +136,19 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
   const restartInstance = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, this would call the API to restart the instance
-      // const response = await fetch(`${formData.serverUrl}/instance/instance/restart/${formData.instance}`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'apikey': formData.apiKey,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // await response.json();
+      const response = await fetch(`${formData.baseUrl}/instance/restart/${formData.instance}`, {
+        method: 'POST',
+        headers: {
+          'apikey': formData.apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const data = await response.json();
       
       toast.success('Instância reiniciada com sucesso!');
       // After restart, check connection again
-      setTimeout(() => checkConnection(formData), 1000);
+      setTimeout(() => checkConnection(), 1000);
     } catch (error) {
       console.error('Error restarting WhatsApp instance:', error);
       toast.error('Erro ao reiniciar instância do WhatsApp.');
@@ -177,7 +179,7 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
             <h3 className="text-lg font-medium">WhatsApp Conectado</h3>
             <p className="text-sm text-muted-foreground">
               Instância: {formData.instance}<br />
-              Servidor: {formData.serverUrl}
+              Servidor: {formData.baseUrl}
             </p>
             <div className="flex flex-col sm:flex-row gap-2 w-full">
               <Button 
@@ -212,13 +214,23 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
           <>
             <div className="space-y-4 mb-6">
               <div className="space-y-2">
+                <Label htmlFor="baseUrl">URL do Servidor</Label>
+                <Input
+                  id="baseUrl"
+                  name="baseUrl"
+                  value={formData.baseUrl}
+                  onChange={handleFormChange}
+                  placeholder="https://evolutionapi.gpstracker-16.com.br"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="apiKey">Chave API</Label>
                 <Input
                   id="apiKey"
                   name="apiKey"
                   value={formData.apiKey}
                   onChange={handleFormChange}
-                  placeholder="A80892194E8E-401D-BDC2-763C9430A09E"
+                  placeholder="d9919cda7e370839d33b8946584dac93"
                 />
               </div>
               <div className="space-y-2">
@@ -228,17 +240,7 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({ onConnect }) => {
                   name="instance"
                   value={formData.instance}
                   onChange={handleFormChange}
-                  placeholder="rastreamento1"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="serverUrl">URL do Servidor</Label>
-                <Input
-                  id="serverUrl"
-                  name="serverUrl"
-                  value={formData.serverUrl}
-                  onChange={handleFormChange}
-                  placeholder="https://evolutionapi.gpstracker-16.com.br"
+                  placeholder="minha-instancia"
                 />
               </div>
             </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +25,8 @@ import {
   Smartphone,
   RefreshCw,
   ExternalLink,
+  Loader2,
+  LogOut,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
