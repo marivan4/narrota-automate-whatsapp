@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,7 +60,10 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
         }
       }
 
-      const response = await fetch(`${baseUrl}/message/sendText/${instance}`, {
+      // Fixed URL with correct format for sending messages
+      const messageUrl = `${baseUrl}/message/sendText/${instance}`;
+      
+      const response = await fetch(messageUrl, {
         method: 'POST',
         headers: {
           'apikey': clientApiKey, // Use client-specific API key for sending messages

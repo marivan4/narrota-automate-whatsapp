@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,16 +77,20 @@ const WhatsAppConnect: React.FC = () => {
     
     setConnectionState('loading');
     try {
+      // Always use global API key for admin operations
+      const apiKeyToUse = isAdmin ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY : cfg.apiKey;
+      
       const response = await fetch(`${cfg.baseUrl}/instance/connectionState/${cfg.instance}`, {
         method: 'GET',
         headers: {
-          'apikey': cfg.apiKey,
+          'apikey': apiKeyToUse,
           'Content-Type': 'application/json'
         }
       });
       
       const data = await response.json();
-      if (data?.state === 'open' || data?.state === 'connected') {
+      if (data?.state === 'open' || data?.state === 'connected' || 
+          (data?.instance && data?.instance.state === 'open')) {
         setConnectionState('connected');
       } else {
         setConnectionState('disconnected');
@@ -134,8 +137,16 @@ const WhatsAppConnect: React.FC = () => {
                   defaultInstance={config.instance}
                   onConnect={handleConnected}
                   onConfigChange={(newConfig) => {
-                    setConfig(newConfig);
-                    localStorage.setItem('whatsapp_config', JSON.stringify(newConfig));
+                    // Store the client-specific API key if provided, otherwise keep the global one for admins
+                    const apiKeyToStore = isAdmin ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY : newConfig.apiKey;
+                    
+                    const configToStore = {
+                      ...newConfig,
+                      apiKey: apiKeyToStore
+                    };
+                    
+                    setConfig(configToStore);
+                    localStorage.setItem('whatsapp_config', JSON.stringify(configToStore));
                   }}
                 />
               </div>

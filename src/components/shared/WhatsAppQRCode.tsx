@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,7 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
     }
     
     // If user is admin, use the global API key
-    if (isAdmin && !defaultApiKey) {
+    if (isAdmin) {
       setFormData(prev => ({
         ...prev,
         apiKey: WHATSAPP_DEFAULTS.GLOBAL_API_KEY
@@ -50,23 +51,27 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
   }, [defaultInstance, defaultApiKey, isAdmin]);
 
   const checkConnection = async () => {
-    if (!formData.instance || !formData.apiKey) {
+    if (!formData.instance) {
       return;
     }
+
+    // Always use the global API key for admin operations
+    const apiKeyToUse = isAdmin ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY : formData.apiKey;
 
     setIsLoading(true);
     try {
       const response = await fetch(`${formData.baseUrl}/instance/connectionState/${formData.instance}`, {
         method: 'GET',
         headers: {
-          'apikey': formData.apiKey,
+          'apikey': apiKeyToUse,
           'Content-Type': 'application/json'
         }
       });
       
       const data = await response.json();
       
-      if (data?.state === 'open' || data?.state === 'connected') {
+      if (data?.state === 'open' || data?.state === 'connected' || 
+          (data?.instance && data?.instance.state === 'open')) {
         setIsConnected(true);
         if (onConnect) onConnect();
         toast.success('WhatsApp conectado!');
@@ -86,22 +91,28 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
     setIsLoading(true);
     try {
       // Validate form data
-      if (!formData.apiKey || !formData.instance) {
-        toast.error('Preencha todos os campos para gerar o QR Code.');
+      if (!formData.instance) {
+        toast.error('Preencha a instância para gerar o QR Code.');
         setIsLoading(false);
         return;
       }
 
+      // Always use the global API key for admin operations
+      const apiKeyToUse = isAdmin ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY : formData.apiKey;
+
       // Notify parent component about config change
       if (onConfigChange) {
-        onConfigChange(formData);
+        onConfigChange({
+          ...formData,
+          apiKey: apiKeyToUse
+        });
       }
 
       // Call the actual API
       const response = await fetch(`${formData.baseUrl}/instance/connect/${formData.instance}`, {
         method: 'GET',
         headers: {
-          'apikey': formData.apiKey,
+          'apikey': apiKeyToUse,
           'Content-Type': 'application/json'
         }
       });
@@ -124,15 +135,18 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
   const disconnectWhatsApp = async () => {
     setIsLoading(true);
     try {
+      // Always use the global API key for admin operations
+      const apiKeyToUse = isAdmin ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY : formData.apiKey;
+      
       const response = await fetch(`${formData.baseUrl}/instance/logout/${formData.instance}`, {
         method: 'POST',
         headers: {
-          'apikey': formData.apiKey,
+          'apikey': apiKeyToUse,
           'Content-Type': 'application/json'
         }
       });
       
-      const data = await response.json();
+      await response.json();
       
       setIsConnected(false);
       setQrCode(null);
@@ -148,15 +162,18 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
   const restartInstance = async () => {
     setIsLoading(true);
     try {
+      // Always use the global API key for admin operations
+      const apiKeyToUse = isAdmin ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY : formData.apiKey;
+      
       const response = await fetch(`${formData.baseUrl}/instance/restart/${formData.instance}`, {
         method: 'POST',
         headers: {
-          'apikey': formData.apiKey,
+          'apikey': apiKeyToUse,
           'Content-Type': 'application/json'
         }
       });
       
-      const data = await response.json();
+      await response.json();
       
       toast.success('Instância reiniciada com sucesso!');
       // After restart, check connection again
@@ -240,7 +257,7 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
                 <Input
                   id="apiKey"
                   name="apiKey"
-                  value={formData.apiKey}
+                  value={isAdmin ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY : formData.apiKey}
                   onChange={handleFormChange}
                   placeholder={WHATSAPP_DEFAULTS.GLOBAL_API_KEY}
                   readOnly={isAdmin} // Make it read-only for admin users
