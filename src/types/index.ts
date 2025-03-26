@@ -1,3 +1,4 @@
+
 export enum UserRole {
   ADMIN = 'admin',
   MANAGER = 'manager',
@@ -29,6 +30,77 @@ export interface WhatsAppConnection {
   apiKey?: string;
   errorMessage?: string;
   lastUpdated: Date;
+}
+
+export interface WhatsAppConfig {
+  apiKey: string;
+  instance: string;
+  serverUrl: string;
+  lastConnected?: Date;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: UserRole;
+  avatar?: string;
+  whatsappConfig?: WhatsAppConfig;
+}
+
+export interface VehicleInfo {
+  id?: string;
+  model: string;
+  plate: string;
+  trackerModel: string;
+  trackerImei: string;
+  installationLocation?: string;
+  clientId?: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  document?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  role: string;
+  createdAt: Date;
+  contracts: Contract[];
+}
+
+export interface Contract {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+  createdBy: string;
+  status: 'active' | 'draft' | 'archived';
+  clientId?: string;
+  signedAt?: Date;
+  signedBy?: string;
+  signatureIp?: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  required: boolean;
+}
+
+export interface Checklist {
+  id: string;
+  title: string;
+  items: ChecklistItem[];
+  createdAt: Date;
+  createdBy: string;
+  status: 'active' | 'draft' | 'archived';
 }
 
 export interface Permission {
