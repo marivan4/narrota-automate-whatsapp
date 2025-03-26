@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS contracts (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Invoices table
+-- Invoices table - Enhanced
 CREATE TABLE IF NOT EXISTS invoices (
   id INT AUTO_INCREMENT PRIMARY KEY,
   contract_id INT NOT NULL,
@@ -114,10 +114,64 @@ CREATE TABLE IF NOT EXISTS invoices (
   status ENUM('PENDING', 'PAID', 'OVERDUE', 'CANCELLED') DEFAULT 'PENDING',
   payment_date DATE,
   payment_method VARCHAR(50),
+  payment_reference VARCHAR(100),
+  sent_reminder BOOLEAN DEFAULT FALSE,
+  sent_reminder_date DATETIME,
+  sent_whatsapp BOOLEAN DEFAULT FALSE,
+  sent_whatsapp_date DATETIME,
+  sent_email BOOLEAN DEFAULT FALSE,
+  sent_email_date DATETIME,
+  is_recurrent BOOLEAN DEFAULT FALSE,
+  recurrence_cycle VARCHAR(50),
+  parent_invoice_id INT,
+  user_id INT NOT NULL,
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (contract_id) REFERENCES contracts(id)
+  FOREIGN KEY (contract_id) REFERENCES contracts(id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (parent_invoice_id) REFERENCES invoices(id) ON DELETE SET NULL
+);
+
+-- Invoice items table - New
+CREATE TABLE IF NOT EXISTS invoice_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id INT NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+  unit_price DECIMAL(10,2) NOT NULL,
+  tax_rate DECIMAL(5,2),
+  amount DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+);
+
+-- Invoice logs table - New
+CREATE TABLE IF NOT EXISTS invoice_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id INT NOT NULL,
+  user_id INT,
+  action VARCHAR(100) NOT NULL,
+  description TEXT,
+  ip_address VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Invoice attachments table - New
+CREATE TABLE IF NOT EXISTS invoice_attachments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id INT NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  file_path VARCHAR(255) NOT NULL,
+  file_type VARCHAR(100) NOT NULL,
+  file_size INT NOT NULL,
+  uploaded_by INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Checklists table
@@ -257,3 +311,19 @@ INSERT INTO vehicles (make, model, year, license_plate, color, chassis_number, c
 VALUES 
 ('Toyota', 'Corolla', 2022, 'ABC1234', 'White', 'TOYT12345678901', 5000, 'GASOLINE', 100.00),
 ('Honda', 'Civic', 2021, 'XYZ5678', 'Black', 'HNDA98765432109', 8000, 'FLEX', 90.00);
+
+-- Sample invoice data
+INSERT INTO contracts (client_id, vehicle_id, user_id, start_date, end_date, daily_rate, total_amount, status, payment_status)
+VALUES
+(1, 1, 1, '2023-10-01', '2023-10-05', 100.00, 500.00, 'COMPLETED', 'PAID'),
+(2, 2, 1, '2023-11-10', '2023-11-15', 90.00, 450.00, 'ACTIVE', 'PENDING');
+
+INSERT INTO invoices (contract_id, invoice_number, issue_date, due_date, amount, tax_amount, total_amount, status, user_id)
+VALUES
+(1, 'INV-001', '2023-10-01', '2023-10-15', 500.00, 0.00, 500.00, 'PAID', 1),
+(2, 'INV-002', '2023-11-10', '2023-11-25', 450.00, 0.00, 450.00, 'PENDING', 1);
+
+INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount)
+VALUES
+(1, 'Aluguel Toyota Corolla - 5 dias', 5, 100.00, 500.00),
+(2, 'Aluguel Honda Civic - 5 dias', 5, 90.00, 450.00);

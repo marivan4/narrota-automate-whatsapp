@@ -24,69 +24,44 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  XCircle
+  XCircle,
+  FileDown,
+  Printer,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Send
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Invoice, invoiceService } from '@/services/invoiceService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-interface InvoicesProps {}
-
-// Mock data for invoices
-const mockInvoices = [
-  {
-    id: 'INV-001',
-    customerId: 'CUST-001',
-    customerName: 'João Silva',
-    amount: 1500.0,
-    dueDate: new Date(2023, 10, 15),
-    status: 'paid',
-    createdAt: new Date(2023, 9, 15),
-  },
-  {
-    id: 'INV-002',
-    customerId: 'CUST-002',
-    customerName: 'Maria Oliveira',
-    amount: 750.5,
-    dueDate: new Date(2023, 11, 20),
-    status: 'pending',
-    createdAt: new Date(2023, 10, 20),
-  },
-  {
-    id: 'INV-003',
-    customerId: 'CUST-003',
-    customerName: 'Carlos Santos',
-    amount: 2350.0,
-    dueDate: new Date(2023, 9, 10),
-    status: 'overdue',
-    createdAt: new Date(2023, 8, 10),
-  },
-  {
-    id: 'INV-004',
-    customerId: 'CUST-004',
-    customerName: 'Ana Pereira',
-    amount: 480.25,
-    dueDate: new Date(2023, 12, 5),
-    status: 'cancelled',
-    createdAt: new Date(2023, 11, 5),
-  },
-  {
-    id: 'INV-005',
-    customerId: 'CUST-005',
-    customerName: 'Pedro Almeida',
-    amount: 1275.75,
-    dueDate: new Date(2023, 11, 30),
-    status: 'pending',
-    createdAt: new Date(2023, 10, 30),
-  },
-];
-
-const Invoices: React.FC<InvoicesProps> = () => {
+const Invoices = () => {
   const navigate = useNavigate();
   const { authState, isAuthorized } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [invoices, setInvoices] = useState(mockInvoices);
+  const queryClient = useQueryClient();
+
+  // Fetch invoices
+  const { 
+    data: invoices = [], 
+    isLoading, 
+    isError 
+  } = useQuery({
+    queryKey: ['invoices'],
+    queryFn: invoiceService.getInvoices
+  });
 
   // Status badge renderer
   const renderStatusBadge = (status: string) => {
@@ -132,7 +107,36 @@ const Invoices: React.FC<InvoicesProps> = () => {
     }).format(value);
   };
 
-  // Permissions check - fixed to always return JSX
+  // Handle export to CSV
+  const handleExportCSV = () => {
+    const csvContent = invoiceService.exportToCSV();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'faturas.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('Faturas exportadas com sucesso!');
+  };
+
+  // Delete invoice mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => invoiceService.deleteInvoice(id),
+    onSuccess: () => {
+      toast.success('Fatura excluída com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    },
+    onError: (error) => {
+      console.error('Erro ao excluir fatura:', error);
+      toast.error('Erro ao excluir fatura');
+    }
+  });
+
+  // Permissions check
   if (!authState.isAuthenticated) {
     navigate('/login');
     return null;
@@ -147,8 +151,14 @@ const Invoices: React.FC<InvoicesProps> = () => {
   const filteredInvoices = invoices.filter(
     (invoice) =>
       invoice.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+      invoice.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      invoice.client.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Calculate summary statistics
+  const pendingInvoices = invoices.filter(inv => inv.status === 'pending');
+  const paidInvoices = invoices.filter(inv => inv.status === 'paid');
+  const overdueInvoices = invoices.filter(inv => inv.status === 'overdue');
 
   return (
     <DashboardLayout>
@@ -167,8 +177,8 @@ const Invoices: React.FC<InvoicesProps> = () => {
             <CardDescription>Visualize e gerencie todas as faturas do sistema</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative w-full max-w-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div className="relative w-full md:max-w-sm">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
@@ -178,66 +188,128 @@ const Invoices: React.FC<InvoicesProps> = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm">
                   <Filter className="h-4 w-4 mr-2" />
                   Filtrar
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleExportCSV}>
                   <Download className="h-4 w-4 mr-2" />
                   Exportar
                 </Button>
-                <Button size="sm">
+                <Button size="sm" onClick={() => navigate('/invoice-edit/new')}>
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Nova Fatura
                 </Button>
               </div>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data de Criação</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredInvoices.length > 0 ? (
-                    filteredInvoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">{invoice.id}</TableCell>
-                        <TableCell>{invoice.customerName}</TableCell>
-                        <TableCell>{formatCurrency(invoice.amount)}</TableCell>
-                        <TableCell>
-                          {format(invoice.dueDate, 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>{renderStatusBadge(invoice.status)}</TableCell>
-                        <TableCell>
-                          {format(invoice.createdAt, 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : isError ? (
+              <div className="bg-destructive/10 p-4 rounded-md text-destructive">
+                Erro ao carregar faturas. Por favor, tente novamente.
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Data de Criação</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredInvoices.length > 0 ? (
+                      filteredInvoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                          <TableCell>{invoice.client.name}</TableCell>
+                          <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
+                          <TableCell>
+                            {format(invoice.due_date, 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell>{renderStatusBadge(invoice.status)}</TableCell>
+                          <TableCell>
+                            {format(invoice.created_at, 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/invoice-edit/${invoice.id}`)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => window.open(`/invoice-print/${invoice.id}`, '_blank')}
+                                >
+                                  <Printer className="h-4 w-4 mr-2" />
+                                  Imprimir
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Send className="h-4 w-4 mr-2" />
+                                  Enviar via WhatsApp
+                                </DropdownMenuItem>
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <DropdownMenuItem 
+                                      onSelect={(event) => {
+                                        event.preventDefault();
+                                      }}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Excluir
+                                    </DropdownMenuItem>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Confirmar exclusão</DialogTitle>
+                                      <DialogDescription>
+                                        Tem certeza que deseja excluir esta fatura? Esta ação não pode ser desfeita.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => document.querySelector('button[data-dialog-close="true"]')?.click()}>
+                                        Cancelar
+                                      </Button>
+                                      <Button variant="destructive" onClick={() => {
+                                        deleteMutation.mutate(invoice.id);
+                                        document.querySelector('button[data-dialog-close="true"]')?.click();
+                                      }}>
+                                        Excluir
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                          Nenhuma fatura encontrada
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                        Nenhuma fatura encontrada
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -248,13 +320,11 @@ const Invoices: React.FC<InvoicesProps> = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {invoices.filter((inv) => inv.status === 'pending').length}
+                {pendingInvoices.length}
               </div>
               <p className="text-muted-foreground text-sm">
                 {formatCurrency(
-                  invoices
-                    .filter((inv) => inv.status === 'pending')
-                    .reduce((acc, inv) => acc + inv.amount, 0)
+                  pendingInvoices.reduce((acc, inv) => acc + inv.total_amount, 0)
                 )}
               </p>
             </CardContent>
@@ -265,13 +335,11 @@ const Invoices: React.FC<InvoicesProps> = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {invoices.filter((inv) => inv.status === 'paid').length}
+                {paidInvoices.length}
               </div>
               <p className="text-muted-foreground text-sm">
                 {formatCurrency(
-                  invoices
-                    .filter((inv) => inv.status === 'paid')
-                    .reduce((acc, inv) => acc + inv.amount, 0)
+                  paidInvoices.reduce((acc, inv) => acc + inv.total_amount, 0)
                 )}
               </p>
             </CardContent>
@@ -282,13 +350,11 @@ const Invoices: React.FC<InvoicesProps> = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-red-500">
-                {invoices.filter((inv) => inv.status === 'overdue').length}
+                {overdueInvoices.length}
               </div>
               <p className="text-muted-foreground text-sm">
                 {formatCurrency(
-                  invoices
-                    .filter((inv) => inv.status === 'overdue')
-                    .reduce((acc, inv) => acc + inv.amount, 0)
+                  overdueInvoices.reduce((acc, inv) => acc + inv.total_amount, 0)
                 )}
               </p>
             </CardContent>

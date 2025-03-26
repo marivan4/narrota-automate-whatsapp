@@ -14,6 +14,7 @@ import WhatsAppSettings from "./pages/WhatsAppSettings";
 import WhatsAppConnect from "./pages/WhatsAppConnect";
 import UsersManagement from "./pages/UsersManagement";
 import Invoices from "./pages/Invoices";
+import InvoiceEdit from "./pages/InvoiceEdit";
 import Settings from "./pages/Settings";
 import Clients from "./pages/Clients";
 import Profile from "./pages/Profile";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/users" element={<UsersManagement />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/invoices" element={<Invoices />} />
+            <Route path="/invoice-edit/:id" element={<InvoiceEdit />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
