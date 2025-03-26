@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, RefreshCw, QrCode, Check, LogOut, RotateCw } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole, WHATSAPP_DEFAULTS } from '@/types';
 
 interface WhatsAppQRCodeProps {
   baseUrl: string;
@@ -22,20 +23,31 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
   onConnect, 
   onConfigChange 
 }) => {
+  const { authState } = useAuth();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    apiKey: defaultApiKey,
+    apiKey: defaultApiKey || WHATSAPP_DEFAULTS.GLOBAL_API_KEY,
     instance: defaultInstance,
-    baseUrl: baseUrl,
+    baseUrl: baseUrl || WHATSAPP_DEFAULTS.DEFAULT_SERVER_URL,
   });
 
+  const isAdmin = authState?.user?.role === UserRole.ADMIN;
+
   useEffect(() => {
-    if (defaultInstance && defaultApiKey) {
+    if (defaultInstance && (defaultApiKey || WHATSAPP_DEFAULTS.GLOBAL_API_KEY)) {
       checkConnection();
     }
-  }, [defaultInstance, defaultApiKey]);
+    
+    // If user is admin, use the global API key
+    if (isAdmin && !defaultApiKey) {
+      setFormData(prev => ({
+        ...prev,
+        apiKey: WHATSAPP_DEFAULTS.GLOBAL_API_KEY
+      }));
+    }
+  }, [defaultInstance, defaultApiKey, isAdmin]);
 
   const checkConnection = async () => {
     if (!formData.instance || !formData.apiKey) {
@@ -220,18 +232,25 @@ const WhatsAppQRCode: React.FC<WhatsAppQRCodeProps> = ({
                   name="baseUrl"
                   value={formData.baseUrl}
                   onChange={handleFormChange}
-                  placeholder="https://evolutionapi.gpstracker-16.com.br"
+                  placeholder={WHATSAPP_DEFAULTS.DEFAULT_SERVER_URL}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="apiKey">Chave API</Label>
+                <Label htmlFor="apiKey">Chave API {isAdmin && "(Global - Somente Leitura)"}</Label>
                 <Input
                   id="apiKey"
                   name="apiKey"
                   value={formData.apiKey}
                   onChange={handleFormChange}
-                  placeholder="d9919cda7e370839d33b8946584dac93"
+                  placeholder={WHATSAPP_DEFAULTS.GLOBAL_API_KEY}
+                  readOnly={isAdmin} // Make it read-only for admin users
+                  className={isAdmin ? "bg-gray-100" : ""}
                 />
+                {isAdmin && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Essa é a chave API global para administradores, usada apenas para leitura de QR code.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="instance">Nome da Instância</Label>

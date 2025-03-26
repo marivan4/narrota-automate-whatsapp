@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Send, RefreshCw, PhoneOff } from 'lucide-react';
+import { Loader2, Send, RefreshCw, PhoneOff, Key } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole, WHATSAPP_DEFAULTS } from '@/types';
 
 interface WhatsAppMessengerProps {
   baseUrl: string;
@@ -22,7 +25,9 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
   connectionState,
   onCheckConnection
 }) => {
+  const { authState } = useAuth();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [clientApiKey, setClientApiKey] = useState<string>(apiKey || '');
   const [messageData, setMessageData] = useState({
     number: '',
     text: '',
@@ -30,14 +35,18 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
     linkPreview: false
   });
 
+  const isAdmin = authState?.user?.role === UserRole.ADMIN;
+  const isManager = authState?.user?.role === UserRole.MANAGER;
+  const canEditApiKey = isAdmin || isManager;
+
   const sendMessage = async () => {
     if (!messageData.number || !messageData.text) {
       toast.error('Por favor, preencha o número e a mensagem.');
       return;
     }
 
-    if (!instance || !apiKey) {
-      toast.error('Configuração de WhatsApp incompleta. Por favor, configure na aba Conectar WhatsApp.');
+    if (!instance || !clientApiKey) {
+      toast.error('Configuração de WhatsApp incompleta. Por favor, configure a API Key do cliente.');
       return;
     }
 
@@ -55,7 +64,7 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
       const response = await fetch(`${baseUrl}/message/sendText/${instance}`, {
         method: 'POST',
         headers: {
-          'apikey': apiKey,
+          'apikey': clientApiKey, // Use client-specific API key for sending messages
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -77,7 +86,7 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
       }
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);
-      toast.error('Erro ao enviar mensagem. Verifique a conexão com WhatsApp.');
+      toast.error('Erro ao enviar mensagem. Verifique a API Key do cliente e a conexão com WhatsApp.');
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +125,7 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
               variant="outline" 
               size="sm" 
               onClick={onCheckConnection}
-              disabled={isLoading || !instance || !apiKey}
+              disabled={isLoading || !instance || !clientApiKey}
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -142,6 +151,26 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Client-specific API Key input */}
+            <div className="space-y-2 p-4 border rounded-md bg-muted/50">
+              <Label htmlFor="clientApiKey" className="flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                API Key do Cliente para Envio de Mensagens
+              </Label>
+              <Input
+                id="clientApiKey"
+                value={clientApiKey}
+                onChange={(e) => setClientApiKey(e.target.value)}
+                placeholder="Insira a API Key específica do cliente"
+                disabled={!canEditApiKey || isLoading}
+              />
+              <p className="text-xs text-muted-foreground">
+                {canEditApiKey 
+                  ? "Esta é a API Key específica para o cliente, necessária para enviar notificações."
+                  : "Você precisa ser administrador ou gerente para editar a API Key do cliente."}
+              </p>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="number">Número de Telefone</Label>
               <Input
@@ -187,7 +216,7 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
             
             <Button 
               onClick={sendMessage} 
-              disabled={isLoading || !messageData.number || !messageData.text || connectionState !== 'connected'} 
+              disabled={isLoading || !messageData.number || !messageData.text || connectionState !== 'connected' || !clientApiKey} 
               className="w-full"
             >
               {isLoading ? (
@@ -211,6 +240,7 @@ const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
           <li>Certifique-se de que o número está no formato correto com código do país.</li>
           <li>Para grupos, use o ID completo no formato: 123456789@g.us</li>
           <li>Você pode usar marcadores básicos como *texto* para negrito e _texto_ para itálico.</li>
+          <li>A API Key do cliente é necessária para o envio de notificações.</li>
         </ul>
       </CardFooter>
     </Card>

@@ -1,4 +1,3 @@
-
 export enum UserRole {
   ADMIN = 'admin',
   MANAGER = 'manager',
@@ -37,6 +36,7 @@ export interface WhatsAppConfig {
   instance: string;
   serverUrl: string;
   lastConnected?: Date;
+  isGlobalKey?: boolean; // Flag to indicate if this is the global admin key
 }
 
 export interface UserProfile {
@@ -154,6 +154,12 @@ export const PERMISSIONS: Permission[] = [
     roles: [UserRole.ADMIN, UserRole.MANAGER]
   }
 ];
+
+// Global constants for WhatsApp integration
+export const WHATSAPP_DEFAULTS = {
+  GLOBAL_API_KEY: 'd9919cda7e370839d33b8946584dac93',
+  DEFAULT_SERVER_URL: 'https://evolutionapi.gpstracker-16.com.br',
+};
 
 // Function to check if a user has permission
 export function hasPermission(user: User | null, permissionKey: string): boolean {

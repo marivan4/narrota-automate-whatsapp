@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WhatsAppQRCode from '@/components/shared/WhatsAppQRCode';
 import WhatsAppMessenger from '@/components/shared/WhatsAppMessenger';
+import { useAuth } from '@/contexts/AuthContext';
+import { WHATSAPP_DEFAULTS, UserRole } from '@/types';
 
 interface ConnectionConfig {
   baseUrl: string;
@@ -16,13 +18,15 @@ interface ConnectionConfig {
 }
 
 const WhatsAppConnect: React.FC = () => {
+  const { authState } = useAuth();
   const [config, setConfig] = useState<ConnectionConfig>({
-    baseUrl: 'https://evolutionapi.gpstracker-16.com.br',
-    apiKey: 'd9919cda7e370839d33b8946584dac93',
+    baseUrl: WHATSAPP_DEFAULTS.DEFAULT_SERVER_URL,
+    apiKey: '',
     instance: ''
   });
   
   const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'loading'>('loading');
+  const isAdmin = authState?.user?.role === UserRole.ADMIN;
   
   useEffect(() => {
     // Load stored config on component mount
@@ -30,14 +34,24 @@ const WhatsAppConnect: React.FC = () => {
     if (storedConfig) {
       try {
         const parsedConfig = JSON.parse(storedConfig);
+        
+        // For admin users, always use the global API key for QR code generation
+        const apiKeyToUse = isAdmin 
+          ? WHATSAPP_DEFAULTS.GLOBAL_API_KEY 
+          : (parsedConfig.apiKey || '');
+          
         setConfig(prevConfig => ({
           ...prevConfig,
-          ...parsedConfig
+          ...parsedConfig,
+          apiKey: apiKeyToUse
         }));
         
         // If we have a stored instance, check connection state
         if (parsedConfig.instance) {
-          checkConnectionState(parsedConfig);
+          checkConnectionState({
+            ...parsedConfig,
+            apiKey: apiKeyToUse
+          });
         } else {
           setConnectionState('disconnected');
         }
@@ -45,9 +59,16 @@ const WhatsAppConnect: React.FC = () => {
         console.error('Error parsing stored WhatsApp config:', error);
       }
     } else {
+      // For new configs, initialize admin with global API key
+      if (isAdmin) {
+        setConfig(prev => ({
+          ...prev,
+          apiKey: WHATSAPP_DEFAULTS.GLOBAL_API_KEY
+        }));
+      }
       setConnectionState('disconnected');
     }
-  }, []);
+  }, [isAdmin]);
   
   const checkConnectionState = async (cfg: ConnectionConfig) => {
     if (!cfg.instance) {
@@ -92,7 +113,9 @@ const WhatsAppConnect: React.FC = () => {
           <InfoIcon className="h-4 w-4 text-blue-600" />
           <AlertTitle className="text-blue-800">Informação</AlertTitle>
           <AlertDescription className="text-blue-700">
-            Conecte o WhatsApp ao sistema para enviar contratos e faturas automaticamente para seus clientes.
+            {isAdmin 
+              ? "Como administrador, você usa a API key global para leitura do QR code. Clientes precisam especificar suas próprias chaves para envio de notificações."
+              : "Conecte o WhatsApp ao sistema para enviar contratos e faturas automaticamente para seus clientes. É necessário usar uma API key específica para envio de mensagens."}
           </AlertDescription>
         </Alert>
         
@@ -127,7 +150,9 @@ const WhatsAppConnect: React.FC = () => {
                     <div>
                       <h3 className="font-medium">1. Configure sua API</h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Insira sua Chave API, Nome da Instância e URL do Servidor nos campos à esquerda.
+                        {isAdmin 
+                          ? "Como administrador, a Chave API global já está configurada para leitura do QR code."
+                          : "Insira sua Chave API, Nome da Instância e URL do Servidor nos campos à esquerda."}
                       </p>
                     </div>
                     
