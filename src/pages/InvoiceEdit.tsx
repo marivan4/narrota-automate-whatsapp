@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { InvoiceForm, InvoiceFormValues } from '@/components/invoices/InvoiceForm';
+import { InvoiceForm, InvoiceFormValues, InvoiceFormSubmitValues } from '@/components/invoices/InvoiceForm';
 import { InvoiceDetails } from '@/components/invoices/InvoiceDetails';
 import { invoiceService } from '@/services/invoiceService';
 import { Button } from '@/components/ui/button';
@@ -42,15 +42,15 @@ const InvoiceEdit = () => {
 
   // Create invoice mutation
   const createMutation = useMutation({
-    mutationFn: (data: InvoiceFormValues) => {
+    mutationFn: (data: InvoiceFormSubmitValues) => {
       // Convert from form values to API data format
       const invoiceData = {
         invoice_number: data.invoice_number,
         contract_id: data.contract_id,
         issue_date: data.issue_date,
         due_date: data.due_date,
-        amount: Number(data.amount), // Ensure number conversion
-        tax_amount: Number(data.tax_amount), // Ensure number conversion
+        amount: data.amount, // Now a number after zod transform
+        tax_amount: data.tax_amount, // Now a number after zod transform
         status: data.status,
         payment_method: data.payment_method,
         notes: data.notes,
@@ -70,15 +70,15 @@ const InvoiceEdit = () => {
 
   // Update invoice mutation
   const updateMutation = useMutation({
-    mutationFn: (data: InvoiceFormValues) => {
+    mutationFn: (data: InvoiceFormSubmitValues) => {
       // Convert from form values to API data format
       const invoiceData = {
         invoice_number: data.invoice_number,
         contract_id: data.contract_id,
         issue_date: data.issue_date,
         due_date: data.due_date,
-        amount: Number(data.amount), // Ensure number conversion
-        tax_amount: Number(data.tax_amount), // Ensure number conversion
+        amount: data.amount, // Now a number after zod transform
+        tax_amount: data.tax_amount, // Now a number after zod transform
         status: data.status,
         payment_method: data.payment_method,
         notes: data.notes,
@@ -112,7 +112,7 @@ const InvoiceEdit = () => {
   });
 
   // Handle form submission
-  const handleSubmit = (data: InvoiceFormValues) => {
+  const handleSubmit = (data: InvoiceFormSubmitValues) => {
     if (id === 'new') {
       createMutation.mutate(data);
     } else {
@@ -211,8 +211,8 @@ const InvoiceEdit = () => {
                       contract_id: invoice?.contract_id,
                       issue_date: invoice?.issue_date,
                       due_date: invoice?.due_date,
-                      amount: invoice?.amount?.toString() || '', // Convert number to string for the form
-                      tax_amount: invoice?.tax_amount?.toString() || '', // Convert number to string for the form
+                      amount: invoice?.amount?.toString() || '',
+                      tax_amount: invoice?.tax_amount?.toString() || '',
                       payment_method: invoice?.payment_method,
                       status: invoice?.status,
                       notes: invoice?.notes,
