@@ -40,7 +40,7 @@ export type InvoiceFormData = {
 };
 
 // Mock data for development
-const mockInvoices = [
+const mockInvoices: Invoice[] = [
   {
     id: 'INV-001',
     invoice_number: 'INV-001',
@@ -50,7 +50,7 @@ const mockInvoices = [
     amount: 1500.0,
     tax_amount: 0,
     total_amount: 1500.0,
-    status: 'paid' as const,
+    status: 'paid',
     payment_date: new Date(2023, 10, 10),
     payment_method: 'Cartão de Crédito',
     client: {
@@ -141,7 +141,7 @@ const mockInvoices = [
 ];
 
 // Simulating a local storage to persist data during development
-let invoicesData = [...mockInvoices];
+let invoicesData: Invoice[] = [...mockInvoices];
 
 export const invoiceService = {
   // Get all invoices

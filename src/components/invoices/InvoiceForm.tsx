@@ -29,8 +29,10 @@ const invoiceFormSchema = z.object({
   contract_id: z.string().min(1, { message: 'Contrato relacionado é obrigatório' }),
   issue_date: z.date({ required_error: 'Data de emissão é obrigatória' }),
   due_date: z.date({ required_error: 'Data de vencimento é obrigatória' }),
-  amount: z.string().min(1, { message: 'Valor é obrigatório' }).transform(val => parseFloat(val)),
-  tax_amount: z.string().transform(val => val ? parseFloat(val) : 0),
+  amount: z.string().min(1, { message: 'Valor é obrigatório' })
+    .transform(val => Number(val)),
+  tax_amount: z.string()
+    .transform(val => val ? Number(val) : 0),
   payment_method: z.string().optional(),
   status: z.enum(['pending', 'paid', 'overdue', 'cancelled']),
   notes: z.string().optional(),
@@ -53,8 +55,8 @@ export function InvoiceForm({ defaultValues, onSubmit, isSubmitting = false, con
       contract_id: '',
       issue_date: new Date(),
       due_date: new Date(new Date().setDate(new Date().getDate() + 30)),
-      amount: '0',
-      tax_amount: '0',
+      amount: '0',  // Keep as string for the input, transform happens at validation
+      tax_amount: '0', // Keep as string for the input, transform happens at validation
       payment_method: '',
       status: 'pending',
       notes: '',

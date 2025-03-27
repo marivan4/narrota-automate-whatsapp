@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,8 +49,8 @@ const InvoiceEdit = () => {
         contract_id: data.contract_id,
         issue_date: data.issue_date,
         due_date: data.due_date,
-        amount: data.amount,
-        tax_amount: data.tax_amount,
+        amount: data.amount, // amount is now a number from the form
+        tax_amount: data.tax_amount, // tax_amount is now a number from the form
         status: data.status,
         payment_method: data.payment_method,
         notes: data.notes,
@@ -78,8 +77,8 @@ const InvoiceEdit = () => {
         contract_id: data.contract_id,
         issue_date: data.issue_date,
         due_date: data.due_date,
-        amount: data.amount,
-        tax_amount: data.tax_amount,
+        amount: data.amount, // amount is now a number from the form
+        tax_amount: data.tax_amount, // tax_amount is now a number from the form
         status: data.status,
         payment_method: data.payment_method,
         notes: data.notes,
@@ -212,8 +211,8 @@ const InvoiceEdit = () => {
                       contract_id: invoice?.contract_id,
                       issue_date: invoice?.issue_date,
                       due_date: invoice?.due_date,
-                      amount: invoice?.amount.toString(),
-                      tax_amount: invoice?.tax_amount.toString(),
+                      amount: invoice?.amount.toString(), // Convert number to string for the form
+                      tax_amount: invoice?.tax_amount.toString(), // Convert number to string for the form
                       payment_method: invoice?.payment_method,
                       status: invoice?.status,
                       notes: invoice?.notes,
