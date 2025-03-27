@@ -4,7 +4,7 @@ import { invoiceDataService } from './invoiceDataService';
 import { invoiceExportService } from './invoiceExportService';
 
 // Re-export the invoice service functionality from its modules
-export { Invoice, InvoiceFormData } from '@/models/invoice';
+export type { Invoice, InvoiceFormData } from '@/models/invoice';
 
 export const invoiceService = {
   // Data operations
