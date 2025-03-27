@@ -55,8 +55,8 @@ export function InvoiceForm({ defaultValues, onSubmit, isSubmitting = false, con
       contract_id: '',
       issue_date: new Date(),
       due_date: new Date(new Date().setDate(new Date().getDate() + 30)),
-      amount: '0',  // Keep as string for the input, transform happens at validation
-      tax_amount: '0', // Keep as string for the input, transform happens at validation
+      amount: '',  // Use empty string instead of '0' to match the expected string type
+      tax_amount: '', // Use empty string instead of '0' to match the expected string type
       payment_method: '',
       status: 'pending',
       notes: '',

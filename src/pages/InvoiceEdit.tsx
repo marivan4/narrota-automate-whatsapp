@@ -211,8 +211,8 @@ const InvoiceEdit = () => {
                       contract_id: invoice?.contract_id,
                       issue_date: invoice?.issue_date,
                       due_date: invoice?.due_date,
-                      amount: invoice?.amount.toString(), // Convert number to string for the form
-                      tax_amount: invoice?.tax_amount.toString(), // Convert number to string for the form
+                      amount: invoice?.amount?.toString() || '', // Convert number to string for the form
+                      tax_amount: invoice?.tax_amount?.toString() || '', // Convert number to string for the form
                       payment_method: invoice?.payment_method,
                       status: invoice?.status,
                       notes: invoice?.notes,
