@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Edit, Trash2, FileText, Car, QrCode, FileDown } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Car, QrCode, FileDown, Sim } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import SimCardManagement from '@/components/clients/SimCardManagement';
 
 const Clients: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ const Clients: React.FC = () => {
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState("clients");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -200,6 +203,12 @@ const Clients: React.FC = () => {
     navigate(`/invoices?clientId=${client.id}`);
   };
 
+  // Function to manage SIM cards for a client
+  const manageSimCards = (client: Client) => {
+    setSelectedClientId(client.id);
+    setActiveTab("simcards");
+  };
+
   // Filter clients based on search term
   const filteredClients = clients.filter(client => 
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -207,6 +216,9 @@ const Clients: React.FC = () => {
     client.document?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.phone.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Find selected client name
+  const selectedClientName = clients.find(c => c.id === selectedClientId)?.name;
 
   return (
     <DashboardLayout>
@@ -219,80 +231,113 @@ const Clients: React.FC = () => {
           </Button>
         </div>
         
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Pesquisar Clientes</CardTitle>
-            <CardDescription>Encontre clientes por nome, email, documento ou telefone</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <Input 
-                placeholder="Buscar cliente..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="clients" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="clients">Clientes</TabsTrigger>
+            <TabsTrigger value="simcards" disabled={!selectedClientId}>
+              SIM Cards {selectedClientName ? `- ${selectedClientName}` : ''}
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="clients">
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Pesquisar Clientes</CardTitle>
+                <CardDescription>Encontre clientes por nome, email, documento ou telefone</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <Input 
+                    placeholder="Buscar cliente..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Clientes</CardTitle>
-            <CardDescription>Gerencie seus clientes e acesse suas informações</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredClients.length > 0 ? (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Documento</TableHead>
-                      <TableHead>Telefone</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Endereço</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClients.map((client) => (
-                      <TableRow key={client.id}>
-                        <TableCell className="font-medium">{client.name}</TableCell>
-                        <TableCell>{client.document}</TableCell>
-                        <TableCell>{client.phone}</TableCell>
-                        <TableCell>{client.email}</TableCell>
-                        <TableCell>
-                          {client.address && `${client.address}, ${client.city}/${client.state}`}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="icon" onClick={() => openEditDialog(client)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" onClick={() => navigateToCreateContract(client)}>
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" onClick={() => navigateToCreateInvoice(client)}>
-                              <FileDown className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" onClick={() => handleDeleteClient(client.id)}>
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground">Nenhum cliente encontrado.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Clientes</CardTitle>
+                <CardDescription>Gerencie seus clientes e acesse suas informações</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {filteredClients.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Documento</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Endereço</TableHead>
+                          <TableHead>Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredClients.map((client) => (
+                          <TableRow key={client.id}>
+                            <TableCell className="font-medium">{client.name}</TableCell>
+                            <TableCell>{client.document}</TableCell>
+                            <TableCell>{client.phone}</TableCell>
+                            <TableCell>{client.email}</TableCell>
+                            <TableCell>
+                              {client.address && `${client.address}, ${client.city}/${client.state}`}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button variant="outline" size="icon" onClick={() => openEditDialog(client)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => navigateToCreateContract(client)}>
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => navigateToCreateInvoice(client)}>
+                                  <FileDown className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => manageSimCards(client)}>
+                                  <Sim className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => handleDeleteClient(client.id)}>
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-muted-foreground">Nenhum cliente encontrado.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="simcards">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>SIM Cards</CardTitle>
+                    <CardDescription>Gerenciamento de SIM Cards para {selectedClientName}</CardDescription>
+                  </div>
+                  <Button variant="outline" onClick={() => setActiveTab("clients")}>
+                    Voltar para Clientes
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <SimCardManagement clientId={selectedClientId || undefined} clientName={selectedClientName} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Add Client Dialog */}

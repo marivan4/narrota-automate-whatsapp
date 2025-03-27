@@ -63,6 +63,17 @@ export default {
           card: "#0C1326",
           green: "#25D366",
         },
+        // Cores dos gráficos
+        chart: {
+          purple: "#8257e5",
+          pink: "#e73f78",
+          red: "#f87171",
+          orange: "#fb923c",
+          yellow: "#fbbf24", 
+          green: "#a3e635",
+          blue: "#38bdf8",
+          indigo: "#818cf8",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
