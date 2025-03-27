@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Client } from '@/types';
 import { toast } from 'sonner';
@@ -10,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Edit, Trash2, FileText, Car, QrCode, FileDown, Sim } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Car, QrCode, FileDown, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SimCardManagement from '@/components/clients/SimCardManagement';
 
@@ -298,7 +297,7 @@ const Clients: React.FC = () => {
                                   <FileDown className="h-4 w-4" />
                                 </Button>
                                 <Button variant="outline" size="icon" onClick={() => manageSimCards(client)}>
-                                  <Sim className="h-4 w-4" />
+                                  <Smartphone className="h-4 w-4" />
                                 </Button>
                                 <Button variant="outline" size="icon" onClick={() => handleDeleteClient(client.id)}>
                                   <Trash2 className="h-4 w-4 text-red-500" />
