@@ -17,7 +17,14 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-evolution-darker dot-pattern p-4">
+      <div className="absolute top-6 left-6 flex items-center gap-2">
+        <div className="h-8 w-8 bg-evolution-blue rounded flex items-center justify-center logo-glow">
+          <span className="text-white font-bold">N</span>
+        </div>
+        <h1 className="text-xl font-bold text-white">Narrota</h1>
+      </div>
+      
       <div className="w-full animate-fade-in">
         <Container maxWidth="sm">
           <div className="w-full glassmorphism rounded-xl p-8 shadow-lg">

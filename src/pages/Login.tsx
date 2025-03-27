@@ -35,22 +35,22 @@ const Login: React.FC = () => {
     <AuthLayout>
       <div className="space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold">Narrota</h1>
-          <p className="text-muted-foreground">
-            Sistema de contratos e checklist com integração WhatsApp
+          <h1 className="text-2xl font-bold text-white">Bem-vindo de volta</h1>
+          <p className="text-gray-400">
+            Entre com sua conta para continuar
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-gray-300">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
-                className="pl-10"
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -59,14 +59,14 @@ const Login: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+            <Label htmlFor="password" className="text-gray-300">Senha</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
-                className="pl-10"
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -75,13 +75,13 @@ const Login: React.FC = () => {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-0 h-full p-2"
+                className="absolute right-0 top-0 h-full p-2 text-gray-400"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  <EyeOff className="h-4 w-4" />
                 ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <Eye className="h-4 w-4" />
                 )}
               </Button>
             </div>
@@ -89,7 +89,7 @@ const Login: React.FC = () => {
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-evolution-blue hover:bg-evolution-blue/90 text-white"
             disabled={authState.isLoading}
           >
             {authState.isLoading ? 'Entrando...' : 'Entrar'}
@@ -97,7 +97,7 @@ const Login: React.FC = () => {
         </form>
 
         {authState.error && (
-          <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+          <div className="p-3 text-sm text-red-500 bg-red-500/10 rounded-md">
             {authState.error}
           </div>
         )}
@@ -105,10 +105,10 @@ const Login: React.FC = () => {
         <div className="space-y-2">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
+              <span className="bg-evolution-card px-2 text-gray-400">
                 Contas para demonstração
               </span>
             </div>
@@ -120,12 +120,12 @@ const Login: React.FC = () => {
                 key={account.email}
                 variant="outline"
                 size="sm"
-                className="justify-between"
+                className="justify-between bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
                 onClick={() => setDemoAccount(account.email, account.password)}
                 disabled={authState.isLoading}
               >
                 <span>{account.email}</span>
-                <span className="rounded bg-secondary px-2 py-0.5 text-xs">
+                <span className="rounded bg-evolution-blue/20 px-2 py-0.5 text-xs text-evolution-blue">
                   {account.role}
                 </span>
               </Button>

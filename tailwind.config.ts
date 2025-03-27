@@ -54,6 +54,15 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Cores específicas do novo tema
+        evolution: {
+          blue: "#4285F4",
+          purple: "#7d5ef2",
+          dark: "#090E1C",
+          darker: "#05091A",
+          card: "#0C1326",
+          green: "#25D366",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,10 +89,16 @@ export default {
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
         'glass-hover': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+        'neon': '0 0 5px theme("colors.evolution.blue"), 0 0 20px rgba(66, 133, 244, 0.5)',
+        'neon-purple': '0 0 5px theme("colors.evolution.purple"), 0 0 20px rgba(125, 94, 242, 0.5)',
       },
       scale: {
-        '102': '1.02', // Add the missing scale value
-      }
+        '102': '1.02',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-dots': 'radial-gradient(rgba(66, 133, 244, 0.1) 1px, transparent 1px)',
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

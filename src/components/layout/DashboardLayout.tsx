@@ -102,7 +102,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   );
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-evolution-darker">
       {/* Mobile menu button */}
       <div className="md:hidden fixed top-4 left-4 z-50">
         <Button
@@ -127,10 +127,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           >
             <div className="mt-8 mb-8 flex items-center justify-between px-4">
               <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold">N</span>
+                <div className="h-8 w-8 rounded-full bg-evolution-blue flex items-center justify-center logo-glow">
+                  <span className="text-white font-bold">N</span>
                 </div>
-                <h1 className="text-xl font-semibold">Narrota</h1>
+                <h1 className="text-xl font-semibold text-white">Narrota</h1>
               </div>
               <Button
                 variant="ghost"
@@ -149,8 +149,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   className={cn(
                     "flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     location.pathname === item.path
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-secondary"
+                      ? "bg-evolution-blue text-white"
+                      : "text-gray-300 hover:bg-evolution-card hover:text-white"
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -163,8 +163,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className={cn(
                   "flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   location.pathname === "/profile"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-secondary"
+                    ? "bg-evolution-blue text-white"
+                    : "text-gray-300 hover:bg-evolution-card hover:text-white"
                 )}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -174,10 +174,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </div>
 
             <div className="absolute bottom-4 left-0 right-0 px-6">
-              <div className="border-t border-border pt-4">
+              <div className="border-t border-white/5 pt-4">
                 <Button
                   variant="ghost"
-                  className="w-full flex items-center justify-start space-x-3"
+                  className="w-full flex items-center justify-start space-x-3 text-gray-300 hover:text-white"
                   onClick={logout}
                 >
                   <LogOut className="h-5 w-5" />
@@ -192,22 +192,23 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Sidebar - desktop */}
       <div 
         className={cn(
-          "hidden md:flex flex-col border-r border-border bg-card transition-all duration-300",
+          "hidden md:flex flex-col border-r border-white/5 bg-evolution-card transition-all duration-300",
           sidebarCollapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="p-4 flex items-center justify-between border-b border-border">
+        <div className="p-4 flex items-center justify-between border-b border-white/5">
           <div className={cn("flex items-center space-x-2", sidebarCollapsed && "justify-center w-full")}>
-            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">N</span>
+            <div className="h-8 w-8 rounded-full bg-evolution-blue flex items-center justify-center logo-glow">
+              <span className="text-white font-bold">N</span>
             </div>
-            {!sidebarCollapsed && <h1 className="text-xl font-semibold">Narrota</h1>}
+            {!sidebarCollapsed && <h1 className="text-xl font-semibold text-white">Narrota</h1>}
           </div>
           {!sidebarCollapsed && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSidebarCollapsed(true)}
+              className="text-gray-400 hover:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -224,8 +225,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   sidebarCollapsed ? "justify-center" : "space-x-3",
                   location.pathname === item.path
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-secondary"
+                    ? "bg-evolution-blue text-white"
+                    : "text-gray-300 hover:bg-evolution-card hover:text-white"
                 )}
                 title={sidebarCollapsed ? item.name : undefined}
               >
@@ -239,8 +240,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 sidebarCollapsed ? "justify-center" : "space-x-3",
                 location.pathname === "/profile"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground hover:bg-secondary"
+                  ? "bg-evolution-blue text-white"
+                  : "text-gray-300 hover:bg-evolution-card hover:text-white"
               )}
               title={sidebarCollapsed ? "Meu Perfil" : undefined}
             >
@@ -255,13 +256,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             variant="ghost"
             size="icon"
             onClick={() => setSidebarCollapsed(false)}
-            className="m-2 self-end"
+            className="m-2 self-end text-gray-400 hover:text-white"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         )}
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-white/5">
           {!sidebarCollapsed ? (
             <div className="flex items-center space-x-3">
               {authState.user?.avatar && (
@@ -272,13 +273,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{authState.user?.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{authState.user?.email}</p>
+                <p className="text-sm font-medium truncate text-white">{authState.user?.name}</p>
+                <p className="text-xs text-gray-400 truncate">{authState.user?.email}</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={logout}
+                className="text-gray-400 hover:text-white"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -288,7 +290,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               variant="ghost"
               size="icon"
               onClick={logout}
-              className="w-full"
+              className="w-full text-gray-400 hover:text-white"
               title="Sair"
             >
               <LogOut className="h-5 w-5" />
@@ -298,7 +300,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </div>
 
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-8 overflow-auto animate-fade-in">
+      <div className="flex-1 p-4 md:p-8 overflow-auto animate-fade-in bg-evolution-darker">
         {children}
       </div>
     </div>
