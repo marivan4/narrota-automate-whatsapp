@@ -129,6 +129,14 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
     window.print();
   };
 
+  // Function to close dialog
+  const closeDialog = () => {
+    const closeButton = document.querySelector('button[data-dialog-close="true"]') as HTMLButtonElement | null;
+    if (closeButton) {
+      closeButton.click();
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-start justify-between">
@@ -236,10 +244,10 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <Button variant="outline" onClick={() => document.querySelector('button[data-dialog-close="true"]')?.click()}>Cancelar</Button>
+                <Button variant="outline" onClick={closeDialog}>Cancelar</Button>
                 <Button variant="destructive" onClick={() => {
                   onDelete();
-                  document.querySelector('button[data-dialog-close="true"]')?.click();
+                  closeDialog();
                 }}>
                   Excluir
                 </Button>

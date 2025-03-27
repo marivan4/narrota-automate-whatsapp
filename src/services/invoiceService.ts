@@ -25,7 +25,17 @@ export interface Invoice {
   updated_at: Date;
 }
 
-export type InvoiceFormData = Omit<Invoice, 'id' | 'total_amount' | 'client' | 'created_at' | 'updated_at'> & {
+export type InvoiceFormData = {
+  invoice_number: string;
+  contract_id: string;
+  issue_date: Date;
+  due_date: Date;
+  amount: number;
+  tax_amount: number;
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  payment_date?: Date;
+  payment_method?: string;
+  notes?: string;
   client_id?: string;
 };
 
@@ -208,10 +218,20 @@ export const invoiceService = {
       const index = invoicesData.findIndex(inv => inv.id === id);
       if (index === -1) return null;
 
-      const updatedInvoice = {
+      const updatedInvoice: Invoice = {
         ...invoicesData[index],
-        ...data,
-        total_amount: (data.amount || invoicesData[index].amount) + (data.tax_amount || invoicesData[index].tax_amount),
+        ...(data.invoice_number !== undefined && { invoice_number: data.invoice_number }),
+        ...(data.contract_id !== undefined && { contract_id: data.contract_id }),
+        ...(data.issue_date !== undefined && { issue_date: data.issue_date }),
+        ...(data.due_date !== undefined && { due_date: data.due_date }),
+        ...(data.amount !== undefined && { amount: data.amount }),
+        ...(data.tax_amount !== undefined && { tax_amount: data.tax_amount }),
+        ...(data.status !== undefined && { status: data.status }),
+        ...(data.payment_date !== undefined && { payment_date: data.payment_date }),
+        ...(data.payment_method !== undefined && { payment_method: data.payment_method }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+        total_amount: (data.amount !== undefined ? data.amount : invoicesData[index].amount) + 
+                      (data.tax_amount !== undefined ? data.tax_amount : invoicesData[index].tax_amount),
         updated_at: new Date()
       };
 

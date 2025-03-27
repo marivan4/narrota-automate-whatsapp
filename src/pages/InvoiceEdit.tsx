@@ -43,7 +43,21 @@ const InvoiceEdit = () => {
 
   // Create invoice mutation
   const createMutation = useMutation({
-    mutationFn: (data: InvoiceFormValues) => invoiceService.createInvoice(data),
+    mutationFn: (data: InvoiceFormValues) => {
+      // Convert from form values to API data format
+      const invoiceData = {
+        invoice_number: data.invoice_number,
+        contract_id: data.contract_id,
+        issue_date: data.issue_date,
+        due_date: data.due_date,
+        amount: data.amount,
+        tax_amount: data.tax_amount,
+        status: data.status,
+        payment_method: data.payment_method,
+        notes: data.notes,
+      };
+      return invoiceService.createInvoice(invoiceData);
+    },
     onSuccess: () => {
       toast.success('Fatura criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -57,8 +71,21 @@ const InvoiceEdit = () => {
 
   // Update invoice mutation
   const updateMutation = useMutation({
-    mutationFn: (data: InvoiceFormValues) => 
-      invoiceService.updateInvoice(id!, data),
+    mutationFn: (data: InvoiceFormValues) => {
+      // Convert from form values to API data format
+      const invoiceData = {
+        invoice_number: data.invoice_number,
+        contract_id: data.contract_id,
+        issue_date: data.issue_date,
+        due_date: data.due_date,
+        amount: data.amount,
+        tax_amount: data.tax_amount,
+        status: data.status,
+        payment_method: data.payment_method,
+        notes: data.notes,
+      };
+      return invoiceService.updateInvoice(id!, invoiceData);
+    }, 
     onSuccess: () => {
       toast.success('Fatura atualizada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
@@ -185,8 +212,8 @@ const InvoiceEdit = () => {
                       contract_id: invoice?.contract_id,
                       issue_date: invoice?.issue_date,
                       due_date: invoice?.due_date,
-                      amount: String(invoice?.amount),
-                      tax_amount: String(invoice?.tax_amount),
+                      amount: invoice?.amount.toString(),
+                      tax_amount: invoice?.tax_amount.toString(),
                       payment_method: invoice?.payment_method,
                       status: invoice?.status,
                       notes: invoice?.notes,

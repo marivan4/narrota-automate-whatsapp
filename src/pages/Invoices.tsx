@@ -53,6 +53,14 @@ const Invoices = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
+  // Function to close dialog
+  const closeDialog = () => {
+    const closeButton = document.querySelector('button[data-dialog-close="true"]') as HTMLButtonElement | null;
+    if (closeButton) {
+      closeButton.click();
+    }
+  };
+
   // Fetch invoices
   const { 
     data: invoices = [], 
@@ -282,12 +290,12 @@ const Invoices = () => {
                                       </DialogDescription>
                                     </DialogHeader>
                                     <DialogFooter>
-                                      <Button variant="outline" onClick={() => document.querySelector('button[data-dialog-close="true"]')?.click()}>
+                                      <Button variant="outline" onClick={closeDialog}>
                                         Cancelar
                                       </Button>
                                       <Button variant="destructive" onClick={() => {
                                         deleteMutation.mutate(invoice.id);
-                                        document.querySelector('button[data-dialog-close="true"]')?.click();
+                                        closeDialog();
                                       }}>
                                         Excluir
                                       </Button>
