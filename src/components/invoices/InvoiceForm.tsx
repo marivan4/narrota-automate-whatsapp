@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,11 +37,22 @@ const invoiceFormSchema = z.object({
   notes: z.string().optional(),
 });
 
-export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
+// Define form values type with strings for the input fields
+export type InvoiceFormValues = {
+  invoice_number: string;
+  contract_id: string;
+  issue_date: Date;
+  due_date: Date;
+  amount: string;
+  tax_amount: string;
+  payment_method?: string;
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  notes?: string;
+};
 
 interface InvoiceFormProps {
   defaultValues?: Partial<InvoiceFormValues>;
-  onSubmit: (data: InvoiceFormValues) => void;
+  onSubmit: (data: z.infer<typeof invoiceFormSchema>) => void;
   isSubmitting?: boolean;
   contracts?: Array<{ id: string; client_name: string }>;
 }
@@ -55,8 +65,8 @@ export function InvoiceForm({ defaultValues, onSubmit, isSubmitting = false, con
       contract_id: '',
       issue_date: new Date(),
       due_date: new Date(new Date().setDate(new Date().getDate() + 30)),
-      amount: '',  // Use empty string instead of '0' to match the expected string type
-      tax_amount: '', // Use empty string instead of '0' to match the expected string type
+      amount: '',
+      tax_amount: '',
       payment_method: '',
       status: 'pending',
       notes: '',

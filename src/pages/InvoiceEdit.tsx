@@ -49,8 +49,8 @@ const InvoiceEdit = () => {
         contract_id: data.contract_id,
         issue_date: data.issue_date,
         due_date: data.due_date,
-        amount: data.amount, // amount is now a number from the form
-        tax_amount: data.tax_amount, // tax_amount is now a number from the form
+        amount: Number(data.amount), // Ensure number conversion
+        tax_amount: Number(data.tax_amount), // Ensure number conversion
         status: data.status,
         payment_method: data.payment_method,
         notes: data.notes,
@@ -77,8 +77,8 @@ const InvoiceEdit = () => {
         contract_id: data.contract_id,
         issue_date: data.issue_date,
         due_date: data.due_date,
-        amount: data.amount, // amount is now a number from the form
-        tax_amount: data.tax_amount, // tax_amount is now a number from the form
+        amount: Number(data.amount), // Ensure number conversion
+        tax_amount: Number(data.tax_amount), // Ensure number conversion
         status: data.status,
         payment_method: data.payment_method,
         notes: data.notes,
