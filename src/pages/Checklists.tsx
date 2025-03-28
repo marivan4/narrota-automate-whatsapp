@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +10,18 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/componen
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  ArrowLeft,
+  ArrowRight,
+  Edit,
+  Trash2,
+  Copy,
+  Send,
+  Loader2,
+} from 'lucide-react';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import VehicleChecklist from '@/components/checklists/VehicleChecklist';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
   LayoutDashboard,
   FileText,
   CheckSquare,
@@ -22,20 +33,10 @@ import {
   LogOut,
   Menu,
   Plus,
-  Edit,
-  Trash2,
-  Copy,
-  Send,
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
   Car,
   Bike
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import VehicleChecklist from '@/components/checklists/VehicleChecklist';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface ChecklistsProps {
   // Define props if needed
@@ -43,7 +44,7 @@ interface ChecklistsProps {
 
 const Checklists: React.FC<ChecklistsProps> = () => {
   const navigate = useNavigate();
-  const { authState, isAuthorized, logout } = useAuth();
+  const { authState, isAuthorized } = useAuth();
 
   // State variables
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -55,6 +56,19 @@ const Checklists: React.FC<ChecklistsProps> = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState('general');
   const checklistsPerPage = 5;
+
+  // Check authentication
+  useEffect(() => {
+    if (!authState.isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (!isAuthorized([UserRole.ADMIN, UserRole.MANAGER])) {
+      navigate('/dashboard');
+      return;
+    }
+  }, [authState.isAuthenticated, isAuthorized, navigate]);
 
   // Mock data (replace with API calls later)
   useEffect(() => {
@@ -280,19 +294,8 @@ const Checklists: React.FC<ChecklistsProps> = () => {
     toast.success(`Checklist de ${data.vehicleType === 'car' ? 'carro' : 'moto'} salvo com sucesso!`);
   };
 
-  // Permissions check - fixed to always return JSX
-  if (!authState.isAuthenticated) {
-    navigate('/login');
-    return null; // Return null instead of void
-  }
-
-  if (!isAuthorized([UserRole.ADMIN, UserRole.MANAGER])) {
-    navigate('/dashboard');
-    return null; // Return null instead of void
-  }
-
   return (
-    <DashboardLayout>
+    <DashboardLayout requiredRoles={[UserRole.ADMIN, UserRole.MANAGER]}>
       <div className="container py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Gerenciamento de Checklists</h1>

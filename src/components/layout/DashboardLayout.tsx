@@ -86,7 +86,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     },
   ];
 
-  // Use useEffect for navigation if needed
+  // Check authentication before getting location
   if (!authState.isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
