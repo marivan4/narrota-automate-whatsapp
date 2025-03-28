@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LayoutDashboard,
   FileText,
@@ -27,9 +29,13 @@ import {
   ArrowLeft,
   ArrowRight,
   Loader2,
+  Car,
+  Bike
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import VehicleChecklist from '@/components/checklists/VehicleChecklist';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface ChecklistsProps {
   // Define props if needed
@@ -47,6 +53,7 @@ const Checklists: React.FC<ChecklistsProps> = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState('general');
   const checklistsPerPage = 5;
 
   // Mock data (replace with API calls later)
@@ -268,6 +275,11 @@ const Checklists: React.FC<ChecklistsProps> = () => {
     toast.info(`Enviando mensagem de teste para o checklist "${checklist.title}"... (funcionalidade não implementada)`);
   };
 
+  const handleSaveVehicleChecklist = (data: any) => {
+    console.log('Checklist de veículo salvo:', data);
+    toast.success(`Checklist de ${data.vehicleType === 'car' ? 'carro' : 'moto'} salvo com sucesso!`);
+  };
+
   // Permissions check - fixed to always return JSX
   if (!authState.isAuthenticated) {
     navigate('/login');
@@ -290,134 +302,152 @@ const Checklists: React.FC<ChecklistsProps> = () => {
           </Button>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Criar Novo Checklist</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="checklistName">Nome do Checklist</Label>
-                <Input
-                  id="checklistName"
-                  placeholder="Ex: Checklist de Instalação"
-                  value={newChecklistName}
-                  onChange={(e) => setNewChecklistName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="checklistContent">Conteúdo do Checklist</Label>
-                <Textarea
-                  id="checklistContent"
-                  placeholder="Ex: Verificar equipamentos..."
-                  value={newChecklistContent}
-                  onChange={(e) => setNewChecklistContent(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div className="flex justify-end">
-                {isEditing ? (
-                  <>
-                    <Button variant="ghost" onClick={handleCancelEdit}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleUpdateChecklist}>
-                      Atualizar Checklist
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={handleCreateChecklist}>
-                    Criar Checklist
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="general" className="mb-6" onValueChange={setActiveTab} value={activeTab}>
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="general">Checklists Gerais</TabsTrigger>
+            <TabsTrigger value="car">Checklist de Carro</TabsTrigger>
+            <TabsTrigger value="motorcycle">Checklist de Moto</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="general">
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Criar Novo Checklist</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="checklistName">Nome do Checklist</Label>
+                    <Input
+                      id="checklistName"
+                      placeholder="Ex: Checklist de Instalação"
+                      value={newChecklistName}
+                      onChange={(e) => setNewChecklistName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="checklistContent">Conteúdo do Checklist</Label>
+                    <Textarea
+                      id="checklistContent"
+                      placeholder="Ex: Verificar equipamentos..."
+                      value={newChecklistContent}
+                      onChange={(e) => setNewChecklistContent(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    {isEditing ? (
+                      <>
+                        <Button variant="ghost" onClick={handleCancelEdit}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleUpdateChecklist}>
+                          Atualizar Checklist
+                        </Button>
+                      </>
+                    ) : (
+                      <Button onClick={handleCreateChecklist}>
+                        Criar Checklist
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Checklists Existentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nome
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Conteúdo
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ações
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {currentChecklists.map((checklist) => (
-                      <tr key={checklist.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{checklist.title}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-500">
-                            {checklist.title.length > 50
-                              ? `${checklist.title.substring(0, 50)}...`
-                              : checklist.title}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <Button variant="ghost" size="icon" onClick={() => handleEditChecklist(checklist)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleCopyChecklist(checklist)}>
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleSendTestMessage(checklist)}>
-                            <Send className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteChecklist(checklist.id)}>
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="flex items-center justify-between px-6 py-4">
-            <span className="text-sm text-gray-500">
-              Página {currentPage} de {totalPages}
-            </span>
-            <div className="space-x-2">
-              <Button
-                variant="outline"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                Próximo
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Checklists Existentes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead>
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Nome
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Conteúdo
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Ações
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {currentChecklists.map((checklist) => (
+                          <tr key={checklist.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{checklist.title}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-500">
+                                {checklist.title.length > 50
+                                  ? `${checklist.title.substring(0, 50)}...`
+                                  : checklist.title}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                              <Button variant="ghost" size="icon" onClick={() => handleEditChecklist(checklist)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleCopyChecklist(checklist)}>
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleSendTestMessage(checklist)}>
+                                <Send className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteChecklist(checklist.id)}>
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex items-center justify-between px-6 py-4">
+                <span className="text-sm text-gray-500">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <div className="space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próximo
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="car">
+            <VehicleChecklist vehicleType="car" onSave={handleSaveVehicleChecklist} />
+          </TabsContent>
+          
+          <TabsContent value="motorcycle">
+            <VehicleChecklist vehicleType="motorcycle" onSave={handleSaveVehicleChecklist} />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
