@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,16 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  LayoutDashboard,
   FileText,
-  CheckSquare,
-  MessageSquare,
   Users,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Menu,
   Plus,
   Edit,
   Trash2,
@@ -236,7 +227,7 @@ const Contracts: React.FC<ContractsProps> = () => {
     <DashboardLayout>
       <div className="container py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Gerenciamento de Contratos</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Gerenciamento de Contratos</h1>
           <div className="flex space-x-2">
             <Button onClick={() => navigate('/clients')}>
               <Users className="h-4 w-4 mr-2" />
@@ -266,7 +257,7 @@ const Contracts: React.FC<ContractsProps> = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Contratos Existentes</CardTitle>
+            <CardTitle className="text-gray-800 dark:text-white">Contratos Existentes</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -279,19 +270,19 @@ const Contracts: React.FC<ContractsProps> = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                           Título
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                           Conteúdo
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
                           Data de Criação
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                           Ações
                         </th>
                       </tr>
@@ -377,7 +368,7 @@ const Contracts: React.FC<ContractsProps> = () => {
 
         {/* Create Contract Dialog */}
         <Dialog open={isCreating} onOpenChange={setIsCreating}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle>Criar Novo Contrato</DialogTitle>
             </DialogHeader>
@@ -387,7 +378,7 @@ const Contracts: React.FC<ContractsProps> = () => {
 
         {/* Edit Contract Dialog */}
         <Dialog open={isEditing} onOpenChange={setIsEditing}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle>Editar Contrato</DialogTitle>
             </DialogHeader>
