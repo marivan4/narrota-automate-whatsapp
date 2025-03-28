@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,8 +40,22 @@ import {
 import ClientForm from '../forms/ClientForm';
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// Define the Client interface to ensure type safety
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  document: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  role: string;
+}
+
 // Mock de clientes para demonstração
-const mockClients = [
+const mockClients: Client[] = [
   {
     id: '1',
     name: 'João Silva',
@@ -171,8 +184,8 @@ const ContractForm: React.FC<ContractFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [currentSection, setCurrentSection] = useState<'basic' | 'client' | 'vehicle' | 'preview'>('basic');
-  const [clients, setClients] = useState(mockClients);
-  const [selectedClient, setSelectedClient] = useState<any | null>(null);
+  const [clients, setClients] = useState<Client[]>(mockClients);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [showVariablesPopover, setShowVariablesPopover] = useState(false);
@@ -281,15 +294,24 @@ Por este Instrumento particular, de um lado NARROTA GPSTRACKER SERVIÇOS DE MONI
     }
   };
 
-  const handleSelectClient = (client: any) => {
+  const handleSelectClient = (client: Client) => {
     setSelectedClient(client);
     setSearchTerm('');
   };
 
   const handleAddNewClient = (clientData: ClientFormValues) => {
-    const newClient = {
+    // Create a new client with all required fields from ClientFormValues
+    const newClient: Client = {
       id: String(Date.now()),
-      ...clientData
+      name: clientData.name,
+      email: clientData.email,
+      phone: clientData.phone,
+      document: clientData.document,
+      address: clientData.address,
+      city: clientData.city,
+      state: clientData.state,
+      zipCode: clientData.zipCode,
+      role: clientData.role
     };
     
     setClients([...clients, newClient]);
@@ -753,7 +775,7 @@ Por este Instrumento particular, de um lado NARROTA GPSTRACKER SERVIÇOS DE MONI
                           <FormLabel>CEP</FormLabel>
                           <FormControl>
                             <Input placeholder="00000-000" {...field} />
-                          </FormControl>
+                          FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -811,199 +833,4 @@ Por este Instrumento particular, de um lado NARROTA GPSTRACKER SERVIÇOS DE MONI
                               <SelectItem value="PI">Piauí</SelectItem>
                               <SelectItem value="RJ">Rio de Janeiro</SelectItem>
                               <SelectItem value="RN">Rio Grande do Norte</SelectItem>
-                              <SelectItem value="RS">Rio Grande do Sul</SelectItem>
-                              <SelectItem value="RO">Rondônia</SelectItem>
-                              <SelectItem value="RR">Roraima</SelectItem>
-                              <SelectItem value="SC">Santa Catarina</SelectItem>
-                              <SelectItem value="SP">São Paulo</SelectItem>
-                              <SelectItem value="SE">Sergipe</SelectItem>
-                              <SelectItem value="TO">Tocantins</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {currentSection === 'vehicle' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="vehicleModel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Modelo do Veículo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Marca e modelo" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="vehiclePlate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Placa</FormLabel>
-                        <FormControl>
-                          <Input placeholder="ABC-1234" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="trackerModel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Modelo do Rastreador</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Modelo do rastreador" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="trackerIMEI"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>IMEI do Rastreador</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Número IMEI" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="installationLocation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Local de Instalação</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Local onde o rastreador foi instalado" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {currentSection === 'preview' && (
-              <div className="space-y-4">
-                <div className="text-sm text-muted-foreground flex items-center mb-2">
-                  <Info className="h-4 w-4 mr-2" />
-                  <span>Esta é uma pré-visualização do contrato. Verifique todos os dados antes de finalizar.</span>
-                </div>
-                
-                {generateContractPreview()}
-              </div>
-            )}
-            
-            <div className="flex justify-between pt-4">
-              <div>
-                {currentSection !== 'basic' && (
-                  <Button 
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (currentSection === 'client') setCurrentSection('basic');
-                      if (currentSection === 'vehicle') setCurrentSection('client');
-                      if (currentSection === 'preview') setCurrentSection('vehicle');
-                    }}
-                  >
-                    Voltar
-                  </Button>
-                )}
-              </div>
-              
-              <div className="space-x-2">
-                {currentSection !== 'preview' ? (
-                  <Button 
-                    type="button"
-                    onClick={() => {
-                      if (currentSection === 'basic') setCurrentSection('client');
-                      if (currentSection === 'client') setCurrentSection('vehicle');
-                      if (currentSection === 'vehicle') setCurrentSection('preview');
-                    }}
-                  >
-                    Próximo
-                  </Button>
-                ) : (
-                  <div className="flex space-x-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowWhatsAppForm(!showWhatsAppForm)}
-                      disabled={isSubmitting}
-                    >
-                      <SendHorizontal className="h-4 w-4 mr-2" />
-                      Enviar por WhatsApp
-                    </Button>
-                    
-                    <Button type="submit" disabled={isSubmitting}>
-                      <Save className="h-4 w-4 mr-2" />
-                      {isSubmitting ? 'Salvando...' : 'Finalizar Contrato'}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </form>
-        </Form>
-        
-        {showWhatsAppForm && (
-          <div className="mt-6 p-4 border rounded-md bg-secondary/50 animate-slide-up">
-            <form onSubmit={handleSendWhatsApp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Número de WhatsApp</Label>
-                <Input
-                  id="phoneNumber"
-                  placeholder="Ex: 5511999999999"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Formato: DDD + número (apenas números)
-                </p>
-              </div>
-              
-              <div className="flex justify-end">
-                <Button type="submit" disabled={isSending}>
-                  {isSending ? 'Enviando...' : 'Enviar'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between text-xs text-muted-foreground">
-        <span>Os contratos são enviados como PDF via WhatsApp</span>
-        {isEditing && (
-          <span>Última modificação: {new Date().toLocaleDateString('pt-BR')}</span>
-        )}
-      </CardFooter>
-    </Card>
-  );
-};
-
-export default ContractForm;
+                              <SelectItem value="RS">Rio Grande do Sul
