@@ -247,7 +247,7 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
   // Render functions for checklist items
   const renderConditionCheckboxes = (categoryIndex: number, itemIndex: number, item: ChecklistItem, subCategoryIndex: number | null = null) => (
     <>
-      <td className="text-left p-2 border-b border-slate-200">{item.text}</td>
+      <td className="text-left p-2 border-b border-slate-200 text-gray-800 dark:text-white">{item.text}</td>
       <td className="p-2 text-center border-b border-slate-200">
         <Checkbox 
           checked={item.selected === 'bom'} 
@@ -271,7 +271,7 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
 
   const renderBooleanCheckboxes = (categoryIndex: number, itemIndex: number, item: ChecklistItem, subCategoryIndex: number | null = null) => (
     <>
-      <td className="text-left p-2 border-b border-slate-200">{item.text}</td>
+      <td className="text-left p-2 border-b border-slate-200 text-gray-800 dark:text-white">{item.text}</td>
       <td className="p-2 text-center border-b border-slate-200">
         <Checkbox 
           checked={item.selected === 'sim'} 
@@ -302,7 +302,7 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block mb-2 font-semibold text-navy-900">Nome</label>
+              <label className="block mb-2 font-semibold text-gray-800 dark:text-white">Nome</label>
               <Input 
                 name="name"
                 value={vehicleInfo.name}
@@ -311,7 +311,7 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
               />
             </div>
             <div>
-              <label className="block mb-2 font-semibold text-navy-900">Data</label>
+              <label className="block mb-2 font-semibold text-gray-800 dark:text-white">Data</label>
               <Input 
                 type="date"
                 name="date"
@@ -321,7 +321,7 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
               />
             </div>
             <div>
-              <label className="block mb-2 font-semibold text-navy-900">Veículo</label>
+              <label className="block mb-2 font-semibold text-gray-800 dark:text-white">Veículo</label>
               <Input 
                 name="vehicle"
                 value={vehicleInfo.vehicle}
@@ -330,7 +330,7 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
               />
             </div>
             <div>
-              <label className="block mb-2 font-semibold text-navy-900">Empresa</label>
+              <label className="block mb-2 font-semibold text-gray-800 dark:text-white">Empresa</label>
               <Input 
                 name="company"
                 value={vehicleInfo.company}
@@ -341,7 +341,7 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
           </div>
 
           <div className="mt-4 mb-6">
-            <h3 className="font-semibold text-lg mb-3">Marque com um círculo a área do veículo afetada</h3>
+            <h3 className="font-semibold text-lg mb-3 text-gray-800 dark:text-white">Marque com um círculo a área do veículo afetada</h3>
             <div className="flex justify-center p-4 bg-gray-50 rounded-md">
               <img 
                 src={vehicleType === 'car' 
@@ -363,10 +363,10 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-blue-50">
-                      <th className="text-left p-2 w-1/2">Item</th>
-                      <th className="p-2 text-center">Bom</th>
-                      <th className="p-2 text-center">Médio</th>
-                      <th className="p-2 text-center">Ruim</th>
+                      <th className="text-left p-2 w-1/2 text-gray-700">Item</th>
+                      <th className="p-2 text-center text-gray-700">Bom</th>
+                      <th className="p-2 text-center text-gray-700">Médio</th>
+                      <th className="p-2 text-center text-gray-700">Ruim</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -388,10 +388,10 @@ const VehicleChecklist: React.FC<VehicleChecklistProps> = ({ vehicleType, onSave
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-blue-50">
-                          <th className="text-left p-2 w-1/2">Item</th>
-                          <th className="p-2 text-center">Sim</th>
-                          <th className="p-2 text-center">Não</th>
-                          <th className="p-2 text-center">N/A</th>
+                          <th className="text-left p-2 w-1/2 text-gray-700">Item</th>
+                          <th className="p-2 text-center text-gray-700">Sim</th>
+                          <th className="p-2 text-center text-gray-700">Não</th>
+                          <th className="p-2 text-center text-gray-700">N/A</th>
                         </tr>
                       </thead>
                       <tbody>
