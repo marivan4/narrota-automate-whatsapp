@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -239,7 +240,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
   function getDefaultContractContent() {
     return `CONTRATO DE COMODATO DE EQUIPAMENTO, MONITORAMENTO DE VEÍCULO, SISTEMA DE AUTO-GESTÃO E OUTRAS AVENÇAS
 
-Por este Instrumento particular, de um lado NARROTA GPSTRACKER SERVIÇOS DE MONITORAMENTO, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 52.273.723/0001-68, com sede (matriz) à Rua: dr urbano figueira 125,Bairro Ns da Guia, cidade Tremembé, São Paulo CEP:12125-030, aqui denominado "CONTRATADA" e de outro lado {cliente_firstname} {cliente_lastname}, na cidade de {cliente_city}, estado de {cliente_state}, Rua:{cliente_address1}, cep: {cliente_postcode}, inscrita no CPF/CNPJ sob o n° {cliente_customfields1}, neste ato representado na forma como representante legal, doravante referida simplesmente como {cliente_firstname} {cliente_lastname}, aqui denominado devidamente qualificado no Pedido de Adesão Comodato de Rastreamento NARROTA GPSTRACKER, parte integrante deste Contrato, têm entre si justo e acertado o presente INSTRUMENTO PARTICULAR DE CONTRATO DE COMODATO, PRESTAÇÃO DE SERVIÇOS E OUTRAS AVENÇAS que se regerá pela cláusulas e condições descritas, conforme segue:
+Por este Instrumento particular, de um lado NARROTA GPSTRACKER SERVIÇOS DE MONITORAMENTO, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 52.273.723/0001-68, com sede (matriz) à Rua: dr urbano figueira 125,Bairro Ns da Guia, cidade Tremembé, São Paulo CEP:12125-030, aqui denominado "CONTRATADA" e de outro lado {cliente_nome}, na cidade de {cliente_cidade}, estado de {cliente_estado}, Rua:{cliente_endereco}, cep: {cliente_cep}, inscrita no CPF/CNPJ sob o n° {cliente_documento}, neste ato representado na forma como representante legal, doravante referida simplesmente como {cliente_nome}, aqui denominado devidamente qualificado no Pedido de Adesão Comodato de Rastreamento NARROTA GPSTRACKER, parte integrante deste Contrato, têm entre si justo e acertado o presente INSTRUMENTO PARTICULAR DE CONTRATO DE COMODATO, PRESTAÇÃO DE SERVIÇOS E OUTRAS AVENÇAS que se regerá pela cláusulas e condições descritas, conforme segue:
 
 1 DO OBJETO DO CONTRATO
 
@@ -829,4 +830,236 @@ Por este Instrumento particular, de um lado NARROTA GPSTRACKER SERVIÇOS DE MONI
                               <SelectItem value="ES">Espírito Santo</SelectItem>
                               <SelectItem value="GO">Goiás</SelectItem>
                               <SelectItem value="MA">Maranhão</SelectItem>
-                              <SelectItem value="
+                              <SelectItem value="MT">Mato Grosso</SelectItem>
+                              <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
+                              <SelectItem value="MG">Minas Gerais</SelectItem>
+                              <SelectItem value="PA">Pará</SelectItem>
+                              <SelectItem value="PB">Paraíba</SelectItem>
+                              <SelectItem value="PR">Paraná</SelectItem>
+                              <SelectItem value="PE">Pernambuco</SelectItem>
+                              <SelectItem value="PI">Piauí</SelectItem>
+                              <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                              <SelectItem value="RN">Rio Grande do Norte</SelectItem>
+                              <SelectItem value="RS">Rio Grande do Sul</SelectItem>
+                              <SelectItem value="RO">Rondônia</SelectItem>
+                              <SelectItem value="RR">Roraima</SelectItem>
+                              <SelectItem value="SC">Santa Catarina</SelectItem>
+                              <SelectItem value="SP">São Paulo</SelectItem>
+                              <SelectItem value="SE">Sergipe</SelectItem>
+                              <SelectItem value="TO">Tocantins</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentSection === 'vehicle' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="vehicleModel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Modelo do Veículo</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Marca e modelo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="vehiclePlate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Placa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ABC-1234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="trackerModel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Modelo do Rastreador</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Modelo do rastreador" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="trackerIMEI"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>IMEI do Rastreador</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Número IMEI" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="installationLocation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Local de Instalação</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Detalhes sobre o local de instalação" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {currentSection === 'preview' && (
+              <div className="space-y-4">
+                <div className="bg-secondary/30 p-4 rounded-lg mb-4">
+                  <h3 className="text-lg font-medium mb-2">Pré-visualização do Contrato</h3>
+                  <p className="text-sm text-muted-foreground">Esta é uma prévia de como o contrato ficará com os dados preenchidos</p>
+                </div>
+                
+                {generateContractPreview()}
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              {currentSection === 'preview' && (
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => setShowWhatsAppForm(true)}
+                >
+                  <SendHorizontal className="h-4 w-4 mr-2" />
+                  Enviar por WhatsApp
+                </Button>
+              )}
+              
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>Salvando...</>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    {isEditing ? 'Atualizar Contrato' : 'Salvar Contrato'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex justify-between border-t">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => {
+            switch (currentSection) {
+              case 'client':
+                setCurrentSection('basic');
+                break;
+              case 'vehicle':
+                setCurrentSection('client');
+                break;
+              case 'preview':
+                setCurrentSection('vehicle');
+                break;
+            }
+          }}
+          disabled={currentSection === 'basic'}
+        >
+          Anterior
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => {
+            switch (currentSection) {
+              case 'basic':
+                setCurrentSection('client');
+                break;
+              case 'client':
+                setCurrentSection('vehicle');
+                break;
+              case 'vehicle':
+                setCurrentSection('preview');
+                break;
+            }
+          }}
+          disabled={currentSection === 'preview'}
+        >
+          Próximo
+        </Button>
+      </CardFooter>
+
+      {/* WhatsApp Form Dialog */}
+      <Dialog open={showWhatsAppForm} onOpenChange={setShowWhatsAppForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar Contrato por WhatsApp</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSendWhatsApp} className="space-y-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="phoneNumber">Número do WhatsApp</Label>
+              <Input 
+                id="phoneNumber" 
+                placeholder="(00) 00000-0000" 
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Informe o número com DDD, sem o +55.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowWhatsAppForm(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit"
+                disabled={isSending || !phoneNumber}
+              >
+                {isSending ? 'Enviando...' : 'Enviar Contrato'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
+export default ContractForm;
