@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { Client } from '@/models/client';
 import { Invoice, InvoiceFormData } from '@/models/invoice';
@@ -48,6 +49,27 @@ interface AsaasCustomer {
 
 interface AsaasCustomersResponse {
   data: AsaasCustomer[];
+  hasMore: boolean;
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
+interface AsaasPayment {
+  id: string;
+  status: string;
+  dueDate: string;
+  value: number;
+  description: string;
+  billingType: string;
+  bankSlipUrl?: string;
+  invoiceUrl?: string;
+  customer: string;
+  externalReference?: string;
+}
+
+interface AsaasPaymentsResponse {
+  data: AsaasPayment[];
   hasMore: boolean;
   totalCount: number;
   limit: number;
@@ -337,9 +359,21 @@ export const asaasService = {
   },
 
   /**
+   * Consulta pagamentos
+   */
+  getPayments: async (queryParams: string = ''): Promise<AsaasPaymentsResponse> => {
+    try {
+      return await asaasService.callApi<AsaasPaymentsResponse>(`/payments${queryParams}`);
+    } catch (error) {
+      console.error('Erro ao buscar pagamentos:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Cancela um pagamento
    */
-  cancelPayment: async (paymentId: string) => {
+  cancelPayment: async (paymentId: string): Promise<AsaasPaymentResponse> => {
     try {
       const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}/cancel`, 'POST');
       return result;
@@ -352,7 +386,7 @@ export const asaasService = {
   /**
    * Reembolsa um pagamento
    */
-  refundPayment: async (paymentId: string, value?: number) => {
+  refundPayment: async (paymentId: string, value?: number): Promise<AsaasPaymentResponse> => {
     try {
       const data = value ? { value } : undefined;
       const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}/refund`, 'POST', data);

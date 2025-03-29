@@ -57,10 +57,24 @@ const searchFormSchema = z.object({
 
 type SearchFormValues = z.infer<typeof searchFormSchema>;
 
+// Define a type for the payments returned by the Asaas API
+interface AsaasPayment {
+  id: string;
+  status: string;
+  dueDate: string;
+  value: number;
+  description: string;
+  billingType: string;
+  bankSlipUrl?: string;
+  invoiceUrl?: string;
+  customer: string;
+  externalReference?: string;
+}
+
 export function AsaasSettings() {
   const { authState } = useAuth();
   const [isConfigured, setIsConfigured] = useState(false);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<AsaasPayment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [companyId, setCompanyId] = useState<string>('');
 
@@ -143,17 +157,10 @@ export function AsaasSettings() {
     try {
       setIsLoading(true);
       
-      // Constrói a query string para a busca
-      let queryParams = [];
-      if (data.reference) queryParams.push(`externalReference=${data.reference}`);
-      if (data.customer) queryParams.push(`customer=${data.customer}`);
-      if (data.billingType !== "ALL") queryParams.push(`billingType=${data.billingType}`);
-      if (data.status !== "ALL") queryParams.push(`status=${data.status}`);
-      
-      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-      
-      // Busca os pagamentos
-      const result = await asaasService.callApi(`/payments${queryString}`);
+      // Use the findPayments function from invoiceService
+      const result = await asaasService.getPayments(
+        buildQueryString(data)
+      );
       
       if (result && result.data) {
         setPayments(result.data);
@@ -168,6 +175,17 @@ export function AsaasSettings() {
     } finally {
       setIsLoading(false);
     }
+  }
+  
+  // Helper function to build the query string
+  function buildQueryString(data: SearchFormValues): string {
+    const queryParams = [];
+    if (data.reference) queryParams.push(`externalReference=${data.reference}`);
+    if (data.customer) queryParams.push(`customer=${data.customer}`);
+    if (data.billingType !== "ALL") queryParams.push(`billingType=${data.billingType}`);
+    if (data.status !== "ALL") queryParams.push(`status=${data.status}`);
+    
+    return queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
   }
 
   return (

@@ -35,6 +35,23 @@ interface AsaasPaymentResult {
   company_name?: string;
 }
 
+interface AsaasPaymentsQueryResponse {
+  data: Array<{
+    id: string;
+    status: string;
+    dueDate: string;
+    value: number;
+    description: string;
+    billingType: string;
+    bankSlipUrl?: string;
+    invoiceUrl?: string;
+  }>;
+  hasMore: boolean;
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
 export const invoiceService = {
   // Data operations
   getInvoices: invoiceDataService.getInvoices,
@@ -139,7 +156,7 @@ export const invoiceService = {
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
       
       // Busca os pagamentos
-      return await asaasService.callApi(`/payments${queryString}`);
+      return await asaasService.getPayments(queryString);
     } catch (error) {
       console.error('Erro ao consultar pagamentos:', error);
       throw error;
