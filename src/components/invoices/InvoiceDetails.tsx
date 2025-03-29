@@ -7,9 +7,11 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, Clock, AlertCircle, XCircle, Send, FileDown, Printer, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, XCircle, Send, FileDown, Printer, AlertTriangle, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { whatsappService } from '@/utils/whatsappService';
+import { AsaasPaymentDialog } from './AsaasPaymentDialog';
+import { asaasService } from '@/services/asaasService';
 
 interface InvoiceDetailsProps {
   invoice: {
@@ -264,6 +266,15 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
             <FileDown className="h-4 w-4 mr-2" />
             Exportar
           </Button>
+          {asaasService.isConfigured() && invoice.status !== 'paid' && (
+            <AsaasPaymentDialog
+              invoice={invoice}
+              client={invoice.client}
+              onSuccess={(data) => {
+                console.log("Pagamento gerado:", data);
+              }}
+            />
+          )}
           <Button 
             size="sm" 
             onClick={handleSendWhatsApp}

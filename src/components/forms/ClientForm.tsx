@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { asaasService } from "@/services/asaasService";
 
 const clientSchema = z.object({
   name: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),
@@ -21,6 +23,7 @@ const clientSchema = z.object({
   role: z.enum(["admin", "client", "viewer"], { 
     required_error: "Selecione um tipo de usuário" 
   }),
+  syncWithAsaas: z.boolean().default(false)
 });
 
 export type ClientFormValues = z.infer<typeof clientSchema>;
@@ -50,12 +53,49 @@ const ClientForm: React.FC<ClientFormProps> = ({
       state: "",
       zipCode: "",
       role: "client",
+      syncWithAsaas: false
     },
   });
 
+  const handleSubmit = async (data: ClientFormValues) => {
+    try {
+      // Se a sincronização com Asaas estiver habilitada
+      if (data.syncWithAsaas) {
+        if (!asaasService.isConfigured()) {
+          toast.error("API Asaas não configurada. Configure o token de acesso nas configurações.");
+          return;
+        }
+
+        // Verifica se o cliente já existe no Asaas
+        const existingCustomer = await asaasService.findCustomerByCpfCnpj(data.document);
+        
+        if (existingCustomer) {
+          toast.info(`Cliente já cadastrado no Asaas: ${existingCustomer.name}`);
+        } else {
+          toast.loading("Sincronizando cliente com Asaas...", { id: "sync-asaas" });
+          // Em uma aplicação real, passaríamos o cliente completo ao invés de um partial
+          // Como o cliente ainda não tem um ID, seria necessário complementar esses dados depois
+          await asaasService.createCustomer({
+            ...data,
+            id: "temp-id",
+            created_at: new Date(),
+            updated_at: new Date()
+          });
+          toast.success("Cliente sincronizado com Asaas com sucesso!", { id: "sync-asaas" });
+        }
+      }
+
+      // Chama o callback de submit passado como prop
+      onSubmit(data);
+    } catch (error) {
+      console.error("Erro ao sincronizar cliente com Asaas:", error);
+      toast.error("Erro ao sincronizar cliente com Asaas");
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -197,6 +237,30 @@ const ClientForm: React.FC<ClientFormProps> = ({
               </FormItem>
             )}
           />
+
+          {asaasService.isConfigured() && (
+            <FormField
+              control={form.control}
+              name="syncWithAsaas"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Sincronizar com Asaas</FormLabel>
+                    <FormDescription>
+                      Cadastrar cliente automaticamente no Asaas
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
         
         <div className="flex justify-end space-x-2">
