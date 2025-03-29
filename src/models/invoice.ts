@@ -17,7 +17,20 @@ export interface Invoice {
     name: string;
     email: string;
     phone: string;
+    document?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
   };
+  items: {
+    id: string;
+    description: string;
+    quantity: number;
+    price: number;
+  }[];
+  subtotal: number;
+  discount: number;
   created_at: Date;
   updated_at: Date;
 }
