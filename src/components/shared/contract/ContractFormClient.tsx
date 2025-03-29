@@ -96,8 +96,10 @@ const ContractFormClient: React.FC<ContractFormClientProps> = ({
                 <p><span className="font-medium">Documento:</span> {selectedClient.document}</p>
                 <p><span className="font-medium">E-mail:</span> {selectedClient.email}</p>
                 <p><span className="font-medium">Telefone:</span> {selectedClient.phone}</p>
-                <p><span className="font-medium">Endereço:</span> {selectedClient.address}</p>
+                <p><span className="font-medium">Endereço:</span> {selectedClient.address}, {selectedClient.number || ''}</p>
+                <p><span className="font-medium">Bairro:</span> {selectedClient.neighborhood || ''}</p>
                 <p><span className="font-medium">Cidade/Estado:</span> {selectedClient.city}/{selectedClient.state}</p>
+                <p><span className="font-medium">CEP:</span> {selectedClient.zipCode}</p>
               </div>
             </div>
           )}

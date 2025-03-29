@@ -1,18 +1,76 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ContractFormSectionProps } from './types';
 
 const ContractFormPreview: React.FC<ContractFormSectionProps> = ({ form }) => {
+  useEffect(() => {
+    // Atualiza automaticamente o conteúdo com as variáveis quando os dados do cliente ou veículo são alterados
+    const subscription = form.watch((value, { name }) => {
+      // Só atualiza o conteúdo quando os campos do cliente ou veículo são alterados
+      if (name && (name.startsWith('client') || name.startsWith('vehicle') || name.startsWith('tracker'))) {
+        updateContentWithVariables(value);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Função para atualizar o conteúdo com as variáveis
+  const updateContentWithVariables = (values: any) => {
+    // Obtém o conteúdo original
+    let originalContent = form.getValues('content');
+    let processedContent = originalContent;
+    
+    // Formato da data atual em formato brasileiro
+    const currentDate = new Date().toLocaleDateString('pt-BR');
+    
+    // Substitui as variáveis pelos valores reais
+    processedContent = processedContent
+      .replace(/{cliente_nome}/g, values.clientName || '')
+      .replace(/{cliente_documento}/g, values.clientDocument || '')
+      .replace(/{cliente_email}/g, values.clientEmail || '')
+      .replace(/{cliente_telefone}/g, values.clientPhone || '')
+      .replace(/{cliente_endereco}/g, values.clientAddress || '')
+      .replace(/{cliente_numero}/g, values.clientNumber || '')
+      .replace(/{cliente_bairro}/g, values.clientNeighborhood || '')
+      .replace(/{cliente_cidade}/g, values.clientCity || '')
+      .replace(/{cliente_estado}/g, values.clientState || '')
+      .replace(/{cliente_cep}/g, values.clientZipCode || '')
+      .replace(/{veiculo_modelo}/g, values.vehicleModel || '')
+      .replace(/{veiculo_placa}/g, values.vehiclePlate || '')
+      .replace(/{rastreador_modelo}/g, values.trackerModel || '')
+      .replace(/{rastreador_imei}/g, values.trackerIMEI || '')
+      .replace(/{instalacao_local}/g, values.installationLocation || '')
+      .replace(/{servico_valor_mensal}/g, values.serviceMonthlyAmount || '')
+      .replace(/{data_atual}/g, currentDate)
+      // Para compatibilidade retroativa
+      .replace(/{cliente_firstname}/g, (values.clientName || '').split(' ')[0] || '')
+      .replace(/{cliente_lastname}/g, (values.clientName || '').split(' ').slice(1).join(' ') || '')
+      .replace(/{cliente_name}/g, values.clientName || '')
+      .replace(/{cliente_address1}/g, `${values.clientAddress || ''}, ${values.clientNumber || ''}`)
+      .replace(/{cliente_customfields1}/g, values.clientDocument || '')
+      .replace(/{cliente_city}/g, values.clientCity || '')
+      .replace(/{cliente_state}/g, values.clientState || '')
+      .replace(/{cliente_postcode}/g, values.clientZipCode || '')
+      .replace(/{servico_recurringamount}/g, values.serviceMonthlyAmount || '')
+      .replace(/{servico_regdate}/g, currentDate);
+    
+    // Atualiza apenas se o conteúdo processado for diferente do original
+    if (originalContent !== processedContent) {
+      form.setValue('content', processedContent, { shouldDirty: true });
+    }
+  };
+
   const generateContractPreview = () => {
     const values = form.getValues();
     
-    // Process variable replacements
+    // Processa substituições de variáveis
     let processedContent = values.content;
     
-    // Format the current date in Brazilian format
+    // Formato da data atual em formato brasileiro
     const currentDate = new Date().toLocaleDateString('pt-BR');
     
-    // Replace variables with actual values
+    // Substitui as variáveis pelos valores reais
     processedContent = processedContent
       .replace(/{cliente_nome}/g, values.clientName)
       .replace(/{cliente_documento}/g, values.clientDocument)
@@ -31,7 +89,7 @@ const ContractFormPreview: React.FC<ContractFormSectionProps> = ({ form }) => {
       .replace(/{instalacao_local}/g, values.installationLocation)
       .replace(/{servico_valor_mensal}/g, values.serviceMonthlyAmount)
       .replace(/{data_atual}/g, currentDate)
-      // For backward compatibility
+      // Para compatibilidade retroativa
       .replace(/{cliente_firstname}/g, values.clientName.split(' ')[0] || '')
       .replace(/{cliente_lastname}/g, values.clientName.split(' ').slice(1).join(' ') || '')
       .replace(/{cliente_name}/g, values.clientName)

@@ -10,6 +10,8 @@ export interface Client {
   phone: string;
   document: string;
   address: string;
+  number?: string;
+  neighborhood?: string;
   city: string;
   state: string;
   zipCode: string;
