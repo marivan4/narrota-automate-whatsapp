@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { AsaasSettings } from '@/components/settings/AsaasSettings';
 import {
   ArrowLeft,
   User,
@@ -23,6 +23,7 @@ import {
   Lock,
   Settings,
   MessageSquare,
+  CreditCard,
 } from 'lucide-react';
 
 const profileSchema = z.object({
@@ -270,7 +271,7 @@ const Profile: React.FC = () => {
           
           <div className="lg:col-span-2">
             <Tabs defaultValue="profile">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span>Perfil</span>
@@ -280,10 +281,16 @@ const Profile: React.FC = () => {
                   <span>Segurança</span>
                 </TabsTrigger>
                 {(userProfile?.role === UserRole.ADMIN || userProfile?.role === UserRole.MANAGER) && (
-                  <TabsTrigger value="whatsapp" className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    <span>WhatsApp</span>
-                  </TabsTrigger>
+                  <>
+                    <TabsTrigger value="whatsapp" className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>WhatsApp</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="asaas" className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      <span>Asaas</span>
+                    </TabsTrigger>
+                  </>
                 )}
               </TabsList>
               
@@ -416,9 +423,15 @@ const Profile: React.FC = () => {
               </TabsContent>
               
               {(userProfile?.role === UserRole.ADMIN || userProfile?.role === UserRole.MANAGER) && (
-                <TabsContent value="whatsapp" className="mt-4">
-                  <WhatsAppConnectionComponent onStatusChange={handleWhatsAppStatusChange} />
-                </TabsContent>
+                <>
+                  <TabsContent value="whatsapp" className="mt-4">
+                    <WhatsAppConnectionComponent onStatusChange={handleWhatsAppStatusChange} />
+                  </TabsContent>
+                  
+                  <TabsContent value="asaas" className="mt-4">
+                    <AsaasSettings />
+                  </TabsContent>
+                </>
               )}
             </Tabs>
           </div>

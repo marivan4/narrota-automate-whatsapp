@@ -31,6 +31,8 @@ interface AsaasPaymentResult {
   description: string;
   payment_type: 'PIX' | 'BOLETO';
   payment_info: AsaasPixQrCodeResponse | { bankSlipUrl?: string; identificationField?: string };
+  company_id?: string;
+  company_name?: string;
 }
 
 export const invoiceService = {
@@ -50,6 +52,9 @@ export const invoiceService = {
       if (!asaasService.isConfigured()) {
         throw new Error('API Asaas não configurada');
       }
+      
+      // Obtém a configuração atual para identificar a empresa
+      const config = asaasService.getConfig();
       
       // Verifica se o cliente já está sincronizado com o Asaas
       let asaasCustomerId = client.asaas_id;
@@ -92,10 +97,51 @@ export const invoiceService = {
         value: payment.value,
         description: payment.description,
         payment_type: paymentType,
-        payment_info: paymentInfo
+        payment_info: paymentInfo,
+        company_id: config.companyId,
+        company_name: config.companyName
       };
     } catch (error) {
       console.error('Erro ao criar pagamento no Asaas:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Consulta pagamentos por filtros
+   */
+  async findPayments(filters: {
+    reference?: string;
+    customer?: string;
+    billingType?: string;
+    status?: string;
+  }) {
+    try {
+      if (!asaasService.isConfigured()) {
+        throw new Error('API Asaas não configurada');
+      }
+      
+      // Constrói a query string para a busca
+      const queryParams = Object.entries(filters)
+        .filter(([_, value]) => value && value !== 'ALL')
+        .map(([key, value]) => {
+          // Mapeia as chaves para os nomes de parâmetros da API Asaas
+          const paramMap: Record<string, string> = {
+            reference: 'externalReference',
+            customer: 'customer',
+            billingType: 'billingType',
+            status: 'status'
+          };
+          
+          return `${paramMap[key] || key}=${value}`;
+        });
+      
+      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+      
+      // Busca os pagamentos
+      return await asaasService.callApi(`/payments${queryString}`);
+    } catch (error) {
+      console.error('Erro ao consultar pagamentos:', error);
       throw error;
     }
   }

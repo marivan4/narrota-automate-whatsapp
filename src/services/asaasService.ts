@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { Client } from '@/models/client';
 import { Invoice, InvoiceFormData } from '@/models/invoice';
@@ -6,6 +5,8 @@ import { Invoice, InvoiceFormData } from '@/models/invoice';
 interface AsaasConfig {
   apiKey: string;
   environment: 'sandbox' | 'production';
+  companyId?: string;
+  companyName?: string;
 }
 
 // Inicializa com valores padrão
@@ -77,9 +78,12 @@ export const asaasService = {
   /**
    * Configura as credenciais da API Asaas
    */
-  setConfig: (apiKey: string, environment: 'sandbox' | 'production' = 'sandbox') => {
+  setConfig: (apiKey: string, environment: 'sandbox' | 'production' = 'sandbox', companyId?: string, companyName?: string) => {
     config.apiKey = apiKey;
     config.environment = environment;
+    config.companyId = companyId;
+    config.companyName = companyName;
+    
     localStorage.setItem('asaas_config', JSON.stringify(config));
     return config;
   },
@@ -101,6 +105,56 @@ export const asaasService = {
   isConfigured: (): boolean => {
     const { apiKey } = asaasService.getConfig();
     return !!apiKey;
+  },
+
+  /**
+   * Salva a configuração para uma empresa específica
+   */
+  setCompanyConfig: (companyId: string, companyName: string, apiKey: string, environment: 'sandbox' | 'production') => {
+    const key = `asaas_config_${companyId}`;
+    const companyConfig: AsaasConfig = {
+      apiKey,
+      environment,
+      companyId,
+      companyName
+    };
+    localStorage.setItem(key, JSON.stringify(companyConfig));
+    
+    // Também atualiza a configuração atual se for a empresa ativa
+    if (config.companyId === companyId) {
+      asaasService.setConfig(apiKey, environment, companyId, companyName);
+    }
+    
+    return companyConfig;
+  },
+  
+  /**
+   * Obtém a configuração para uma empresa específica
+   */
+  getCompanyConfig: (companyId: string): AsaasConfig | null => {
+    const key = `asaas_config_${companyId}`;
+    const storedConfig = localStorage.getItem(key);
+    if (storedConfig) {
+      return JSON.parse(storedConfig);
+    }
+    return null;
+  },
+  
+  /**
+   * Define a empresa ativa para as operações Asaas
+   */
+  setActiveCompany: (companyId: string): boolean => {
+    const companyConfig = asaasService.getCompanyConfig(companyId);
+    if (companyConfig) {
+      asaasService.setConfig(
+        companyConfig.apiKey,
+        companyConfig.environment,
+        companyConfig.companyId,
+        companyConfig.companyName
+      );
+      return true;
+    }
+    return false;
   },
 
   /**
