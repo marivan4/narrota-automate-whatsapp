@@ -19,7 +19,12 @@ import Settings from "./pages/Settings";
 import Clients from "./pages/Clients";
 import Profile from "./pages/Profile";
 import Reports from "./pages/Reports";
+import ContractSignature from "./pages/ContractSignature";
 import NotFound from "./pages/NotFound";
+import Alerts from "./pages/Alerts";
+import Vehicles from "./pages/Vehicles";
+import Appointments from "./pages/Appointments";
+import InvoicePrint from "./pages/InvoicePrint";
 
 const queryClient = new QueryClient();
 
@@ -42,9 +47,14 @@ const App = () => (
             <Route path="/clients" element={<Clients />} />
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/invoice-edit/:id" element={<InvoiceEdit />} />
+            <Route path="/invoice-print/:id" element={<InvoicePrint />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/contract-signature" element={<ContractSignature />} />
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/vehicles" element={<Vehicles />} />
+            <Route path="/appointments" element={<Appointments />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

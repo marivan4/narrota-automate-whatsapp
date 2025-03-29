@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from "sonner";
-import { FileText, Save, SendHorizontal } from 'lucide-react';
+import { FileText, Save, SendHorizontal, Link } from 'lucide-react';
 import {
   Form,
 } from "@/components/ui/form";
@@ -18,6 +17,8 @@ import ContractWhatsAppDialog from './contract/ContractWhatsAppDialog';
 import { contractFormSchema, ContractFormValues, ContractFormProps, Client } from './contract/types';
 import { mockClients } from './contracts/mockClients';
 import { getDefaultContractContent } from './contracts/contractVariables';
+import { contractSignatureService } from '@/utils/contractSignatureService';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const ContractForm: React.FC<ContractFormProps> = ({
   onSubmit,
@@ -57,6 +58,10 @@ const ContractForm: React.FC<ContractFormProps> = ({
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [showVariablesPopover, setShowVariablesPopover] = useState(false);
   const [contentCursorPosition, setContentCursorPosition] = useState(0);
+  const [signatureLink, setSignatureLink] = useState('');
+  const [showSignatureLink, setShowSignatureLink] = useState(false);
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [uploadedPdfContent, setUploadedPdfContent] = useState('');
   
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
@@ -89,6 +94,47 @@ const ContractForm: React.FC<ContractFormProps> = ({
     client.document.includes(searchTerm)
   );
 
+  // This effect will update the contract content whenever client or vehicle data changes
+  useEffect(() => {
+    const replaceVariablesWithData = () => {
+      const values = form.getValues();
+      let content = values.content;
+      
+      // Only proceed if we have base content and client data
+      if (!content || !values.clientName) return;
+
+      // Replace client variables
+      content = content.replace(/\{\{cliente\.nome\}\}/g, values.clientName || '');
+      content = content.replace(/\{\{cliente\.documento\}\}/g, values.clientDocument || '');
+      content = content.replace(/\{\{cliente\.email\}\}/g, values.clientEmail || '');
+      content = content.replace(/\{\{cliente\.telefone\}\}/g, values.clientPhone || '');
+      content = content.replace(/\{\{cliente\.endereco\}\}/g, values.clientAddress || '');
+      content = content.replace(/\{\{cliente\.numero\}\}/g, values.clientNumber || '');
+      content = content.replace(/\{\{cliente\.bairro\}\}/g, values.clientNeighborhood || '');
+      content = content.replace(/\{\{cliente\.cidade\}\}/g, values.clientCity || '');
+      content = content.replace(/\{\{cliente\.estado\}\}/g, values.clientState || '');
+      content = content.replace(/\{\{cliente\.cep\}\}/g, values.clientZipCode || '');
+      
+      // Replace vehicle variables
+      content = content.replace(/\{\{veiculo\.modelo\}\}/g, values.vehicleModel || '');
+      content = content.replace(/\{\{veiculo\.placa\}\}/g, values.vehiclePlate || '');
+      content = content.replace(/\{\{rastreador\.modelo\}\}/g, values.trackerModel || '');
+      content = content.replace(/\{\{rastreador\.imei\}\}/g, values.trackerIMEI || '');
+      content = content.replace(/\{\{servico\.valor\}\}/g, values.serviceMonthlyAmount || '');
+      content = content.replace(/\{\{instalacao\.local\}\}/g, values.installationLocation || '');
+      
+      // Update the form with the new content if it's different
+      if (content !== values.content) {
+        form.setValue('content', content);
+      }
+    };
+
+    // Call the function when in preview mode or when client/vehicle data changes
+    if (currentSection === 'preview') {
+      replaceVariablesWithData();
+    }
+  }, [currentSection, form]);
+
   useEffect(() => {
     if (selectedClient) {
       form.setValue('clientId', selectedClient.id);
@@ -102,6 +148,28 @@ const ContractForm: React.FC<ContractFormProps> = ({
       form.setValue('clientZipCode', selectedClient.zipCode);
     }
   }, [selectedClient, form]);
+
+  // Handle PDF contract upload
+  const handleContractFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setContractFile(file);
+      
+      // Here you would normally use a PDF parsing library
+      // For this demo, we'll just set a placeholder message
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          toast.success(`Arquivo "${file.name}" carregado com sucesso`);
+          setUploadedPdfContent(`Conteúdo do arquivo PDF "${file.name}" seria exibido aqui. Em uma implementação real, o conteúdo seria extraído usando uma biblioteca de parsing de PDF.`);
+          
+          // Set contract content to the placeholder
+          form.setValue('content', uploadedPdfContent);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
 
   const handleFormSubmit = async (values: ContractFormValues) => {
     setIsSubmitting(true);
@@ -134,6 +202,14 @@ const ContractForm: React.FC<ContractFormProps> = ({
         signatureCoordinates: `${geoData.latitude}, ${geoData.longitude}`
       };
       
+      // Generate contract ID (in a real app, this would come from the database)
+      const contractId = `contract-${Date.now()}`;
+      
+      // Generate signature link
+      const currentDomain = window.location.origin;
+      const link = contractSignatureService.generateSignatureLink(contractId, currentDomain);
+      setSignatureLink(link);
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
       
@@ -142,6 +218,11 @@ const ContractForm: React.FC<ContractFormProps> = ({
       }
       
       toast.success(isEditing ? "Contrato atualizado com sucesso!" : "Contrato criado com sucesso!");
+      
+      // Show signature link after contract creation
+      if (!isEditing) {
+        setShowSignatureLink(true);
+      }
     } catch (error) {
       toast.error("Ocorreu um erro ao salvar o contrato. Por favor, tente novamente.");
       console.error("Error submitting contract:", error);
@@ -203,6 +284,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
     setContentCursorPosition(textarea.selectionStart);
   };
 
+  // Send via WhatsApp with signature link
   const handleSendWhatsApp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -216,20 +298,37 @@ const ContractForm: React.FC<ContractFormProps> = ({
     setIsSending(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      const values = form.getValues();
+      
+      // Generate contract ID (in a real app, this would come from the database)
+      const contractId = `contract-${Date.now()}`;
+      
+      // Send contract with signature link via WhatsApp
+      await contractSignatureService.sendContractViaWhatsApp(
+        phoneNumber,
+        values,
+        contractId,
+        values.clientName
+      );
       
       if (onSendWhatsApp) {
-        onSendWhatsApp(phoneNumber, form.getValues());
+        onSendWhatsApp(phoneNumber, values);
       }
       
-      toast.success("Contrato enviado por WhatsApp com sucesso!");
+      toast.success("Contrato com link de assinatura enviado por WhatsApp com sucesso!");
       setShowWhatsAppForm(false);
     } catch (error) {
       toast.error("Ocorreu um erro ao enviar o contrato. Por favor, tente novamente.");
+      console.error("Error sending contract:", error);
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Copy signature link to clipboard
+  const copySignatureLink = () => {
+    navigator.clipboard.writeText(signatureLink);
+    toast.success("Link de assinatura copiado para a área de transferência!");
   };
 
   return (
@@ -273,13 +372,30 @@ const ContractForm: React.FC<ContractFormProps> = ({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
             {currentSection === 'basic' && (
-              <ContractFormBasic 
-                form={form} 
-                showVariablesPopover={showVariablesPopover}
-                setShowVariablesPopover={setShowVariablesPopover}
-                handleInsertVariable={handleInsertVariable}
-                handleCaptureTextareaCursor={handleCaptureTextareaCursor}
-              />
+              <>
+                <ContractFormBasic 
+                  form={form} 
+                  showVariablesPopover={showVariablesPopover}
+                  setShowVariablesPopover={setShowVariablesPopover}
+                  handleInsertVariable={handleInsertVariable}
+                  handleCaptureTextareaCursor={handleCaptureTextareaCursor}
+                />
+                <div className="mt-4 border-t pt-4">
+                  <h3 className="text-sm font-medium mb-2">Upload de Contrato PDF</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Você também pode fazer upload de um contrato em PDF</p>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleContractFileChange}
+                    className="block w-full text-sm text-slate-500
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-md file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-primary file:text-white
+                              hover:file:bg-primary/80"
+                  />
+                </div>
+              </>
             )}
 
             {currentSection === 'client' && (
@@ -305,31 +421,67 @@ const ContractForm: React.FC<ContractFormProps> = ({
               <ContractFormPreview form={form} />
             )}
             
-            <div className="flex justify-end space-x-2 pt-4 border-t">
-              {currentSection === 'preview' && (
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setShowWhatsAppForm(true)}
-                >
-                  <SendHorizontal className="h-4 w-4 mr-2" />
-                  Enviar por WhatsApp
-                </Button>
-              )}
-              
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>Salvando...</>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    {isEditing ? 'Atualizar Contrato' : 'Salvar Contrato'}
-                  </>
+            <div className="flex justify-between space-x-2 pt-4 border-t">
+              <div>
+                {showSignatureLink && (
+                  <div className="flex items-center space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Link className="h-4 w-4 mr-2" />
+                          Link de Assinatura
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-4">
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm">Link para Assinatura Online</h4>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              value={signatureLink}
+                              readOnly
+                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                            />
+                            <Button size="sm" onClick={copySignatureLink}>
+                              Copiar
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Compartilhe este link com o cliente para assinatura online.
+                          </p>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 )}
-              </Button>
+              </div>
+              
+              <div className="flex space-x-2">
+                {currentSection === 'preview' && (
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setShowWhatsAppForm(true)}
+                  >
+                    <SendHorizontal className="h-4 w-4 mr-2" />
+                    Enviar por WhatsApp
+                  </Button>
+                )}
+                
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>Salvando...</>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      {isEditing ? 'Atualizar Contrato' : 'Salvar Contrato'}
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
