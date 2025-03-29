@@ -56,7 +56,22 @@ export const invoiceDataService = {
           name: 'Cliente Novo',
           email: 'cliente@exemplo.com',
           phone: '11999999999',
+          document: '', // Adding required properties
+          address: '',
+          city: '',
+          state: '',
+          zipCode: ''
         },
+        items: [  // Adding required items array
+          {
+            id: '1',
+            description: 'Serviço padrão',
+            quantity: 1,
+            price: data.amount
+          }
+        ],
+        subtotal: data.amount, // Adding required subtotal
+        discount: 0, // Adding required discount
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -84,7 +99,10 @@ export const invoiceDataService = {
         ...(data.contract_id !== undefined && { contract_id: data.contract_id }),
         ...(data.issue_date !== undefined && { issue_date: data.issue_date }),
         ...(data.due_date !== undefined && { due_date: data.due_date }),
-        ...(data.amount !== undefined && { amount: data.amount }),
+        ...(data.amount !== undefined && { 
+          amount: data.amount,
+          subtotal: data.amount // Update subtotal when amount changes
+        }),
         ...(data.tax_amount !== undefined && { tax_amount: data.tax_amount }),
         ...(data.status !== undefined && { status: data.status }),
         ...(data.payment_date !== undefined && { payment_date: data.payment_date }),
