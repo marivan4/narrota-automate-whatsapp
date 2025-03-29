@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -211,14 +210,14 @@ const Alerts: React.FC = () => {
                   />
                   
                   <Select
-                    value={statusFilter || ""}
-                    onValueChange={(value) => setStatusFilter(value || null)}
+                    value={statusFilter || "all-status"}
+                    onValueChange={(value) => setStatusFilter(value === "all-status" ? null : value)}
                   >
                     <SelectTrigger className="md:w-1/4">
                       <SelectValue placeholder="Filtrar por status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os status</SelectItem>
+                      <SelectItem value="all-status">Todos os status</SelectItem>
                       <SelectItem value="active">Ativos</SelectItem>
                       <SelectItem value="resolved">Resolvidos</SelectItem>
                       <SelectItem value="ignored">Ignorados</SelectItem>
@@ -226,14 +225,14 @@ const Alerts: React.FC = () => {
                   </Select>
                   
                   <Select
-                    value={typeFilter || ""}
-                    onValueChange={(value) => setTypeFilter(value || null)}
+                    value={typeFilter || "all-types"}
+                    onValueChange={(value) => setTypeFilter(value === "all-types" ? null : value)}
                   >
                     <SelectTrigger className="md:w-1/4">
                       <SelectValue placeholder="Filtrar por tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os tipos</SelectItem>
+                      <SelectItem value="all-types">Todos os tipos</SelectItem>
                       <SelectItem value="geofence">Cerca Virtual</SelectItem>
                       <SelectItem value="battery">Bateria</SelectItem>
                       <SelectItem value="motion">Movimento</SelectItem>
