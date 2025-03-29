@@ -1,11 +1,22 @@
 
 import { Invoice, InvoiceFormData } from '@/models/invoice';
+import { Client } from '@/models/client';
 import { invoiceDataService } from './invoiceDataService';
 import { invoiceExportService } from './invoiceExportService';
 import { asaasService } from './asaasService';
 
 // Re-export the invoice service functionality from its modules
 export type { Invoice, InvoiceFormData } from '@/models/invoice';
+
+interface AsaasPaymentResult {
+  payment_id: string;
+  status: string;
+  due_date: string;
+  value: number;
+  description: string;
+  payment_type: 'PIX' | 'BOLETO';
+  payment_info: any;
+}
 
 export const invoiceService = {
   // Data operations
@@ -19,7 +30,7 @@ export const invoiceService = {
   exportToCSV: invoiceExportService.exportToCSV,
   
   // Asaas integration
-  async createAsaasPayment(invoice: Invoice, client: any, paymentType: 'PIX' | 'BOLETO') {
+  async createAsaasPayment(invoice: Invoice, client: Client, paymentType: 'PIX' | 'BOLETO'): Promise<AsaasPaymentResult> {
     try {
       if (!asaasService.isConfigured()) {
         throw new Error('API Asaas não configurada');

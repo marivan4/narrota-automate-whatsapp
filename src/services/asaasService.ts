@@ -20,6 +20,27 @@ const BASE_URLS = {
   production: 'https://api.asaas.com/v3'
 };
 
+// Define response types for API calls
+interface AsaasPaymentResponse {
+  id: string;
+  status: string;
+  dueDate: string;
+  value: number;
+  description: string;
+  bankSlipUrl?: string;
+  invoiceUrl?: string;
+}
+
+interface AsaasPixQrCodeResponse {
+  encodedImage: string;
+  payload: string;
+  expirationDate: string;
+}
+
+interface AsaasIdentificationFieldResponse {
+  identificationField: string;
+}
+
 export const asaasService = {
   /**
    * Configura as credenciais da API Asaas
@@ -169,7 +190,7 @@ export const asaasService = {
     };
 
     try {
-      const result = await asaasService.callApi('/payments', 'POST', paymentData);
+      const result = await asaasService.callApi<AsaasPaymentResponse>('/payments', 'POST', paymentData);
       return result;
     } catch (error) {
       console.error(`Erro ao criar pagamento via ${paymentType}:`, error);
@@ -182,7 +203,7 @@ export const asaasService = {
    */
   getPixQrCode: async (paymentId: string) => {
     try {
-      const result = await asaasService.callApi(`/payments/${paymentId}/pixQrCode`);
+      const result = await asaasService.callApi<AsaasPixQrCodeResponse>(`/payments/${paymentId}/pixQrCode`);
       return result;
     } catch (error) {
       console.error('Erro ao obter QR Code PIX:', error);
@@ -195,7 +216,7 @@ export const asaasService = {
    */
   getBoletoUrl: async (paymentId: string) => {
     try {
-      const result = await asaasService.callApi(`/payments/${paymentId}`);
+      const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}`);
       return result.bankSlipUrl;
     } catch (error) {
       console.error('Erro ao obter URL do boleto:', error);
@@ -208,7 +229,7 @@ export const asaasService = {
    */
   getBoletoIdentificationField: async (paymentId: string) => {
     try {
-      const result = await asaasService.callApi(`/payments/${paymentId}/identificationField`);
+      const result = await asaasService.callApi<AsaasIdentificationFieldResponse>(`/payments/${paymentId}/identificationField`);
       return result.identificationField;
     } catch (error) {
       console.error('Erro ao obter linha digitável:', error);
@@ -221,7 +242,7 @@ export const asaasService = {
    */
   getPaymentStatus: async (paymentId: string) => {
     try {
-      const result = await asaasService.callApi(`/payments/${paymentId}`);
+      const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}`);
       return result.status;
     } catch (error) {
       console.error('Erro ao verificar status do pagamento:', error);
@@ -234,7 +255,7 @@ export const asaasService = {
    */
   cancelPayment: async (paymentId: string) => {
     try {
-      const result = await asaasService.callApi(`/payments/${paymentId}/cancel`, 'POST');
+      const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}/cancel`, 'POST');
       return result;
     } catch (error) {
       console.error('Erro ao cancelar pagamento:', error);
@@ -248,7 +269,7 @@ export const asaasService = {
   refundPayment: async (paymentId: string, value?: number) => {
     try {
       const data = value ? { value } : undefined;
-      const result = await asaasService.callApi(`/payments/${paymentId}/refund`, 'POST', data);
+      const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}/refund`, 'POST', data);
       return result;
     } catch (error) {
       console.error('Erro ao reembolsar pagamento:', error);

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { asaasService } from "@/services/asaasService";
+import { Client } from "@/models/client";
 
 const clientSchema = z.object({
   name: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),
@@ -73,14 +74,14 @@ const ClientForm: React.FC<ClientFormProps> = ({
           toast.info(`Cliente já cadastrado no Asaas: ${existingCustomer.name}`);
         } else {
           toast.loading("Sincronizando cliente com Asaas...", { id: "sync-asaas" });
-          // Em uma aplicação real, passaríamos o cliente completo ao invés de um partial
-          // Como o cliente ainda não tem um ID, seria necessário complementar esses dados depois
-          await asaasService.createCustomer({
+          // Convertendo para o tipo correto de Cliente
+          const clientData: Client = {
             ...data,
             id: "temp-id",
             created_at: new Date(),
             updated_at: new Date()
-          });
+          };
+          await asaasService.createCustomer(clientData);
           toast.success("Cliente sincronizado com Asaas com sucesso!", { id: "sync-asaas" });
         }
       }

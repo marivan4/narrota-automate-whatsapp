@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,33 +6,15 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle, Clock, AlertCircle, XCircle, Send, FileDown, Printer, AlertTriangle, CreditCard } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, XCircle, Send, FileDown, Printer, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { whatsappService } from '@/utils/whatsappService';
 import { AsaasPaymentDialog } from './AsaasPaymentDialog';
 import { asaasService } from '@/services/asaasService';
+import { Invoice } from '@/models/invoice';
 
 interface InvoiceDetailsProps {
-  invoice: {
-    id: string;
-    invoice_number: string;
-    issue_date: Date;
-    due_date: Date;
-    amount: number;
-    tax_amount: number;
-    total_amount: number;
-    status: string;
-    payment_date?: Date;
-    payment_method?: string;
-    notes?: string;
-    contract_id: string;
-    client: {
-      id: string;
-      name: string;
-      email: string;
-      phone: string;
-    };
-  };
+  invoice: Invoice;
   onEdit: () => void;
   onDelete: () => void;
   whatsappConfig?: {
@@ -150,6 +131,7 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
         </div>
         <div>{renderStatusBadge(invoice.status)}</div>
       </CardHeader>
+      
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -257,6 +239,7 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
             </DialogContent>
           </Dialog>
         </div>
+        
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
