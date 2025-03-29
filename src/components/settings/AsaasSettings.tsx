@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -26,7 +25,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Check, CreditCard, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
-import { asaasService } from "@/services/asaasService";
+import { asaasService, AsaasPayment, AsaasPaymentsResponse } from "@/services/asaasService";
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -56,20 +55,6 @@ const searchFormSchema = z.object({
 });
 
 type SearchFormValues = z.infer<typeof searchFormSchema>;
-
-// Define a type for the payments returned by the Asaas API
-interface AsaasPayment {
-  id: string;
-  status: string;
-  dueDate: string;
-  value: number;
-  description: string;
-  billingType: string;
-  bankSlipUrl?: string;
-  invoiceUrl?: string;
-  customer: string;
-  externalReference?: string;
-}
 
 export function AsaasSettings() {
   const { authState } = useAuth();
@@ -157,7 +142,7 @@ export function AsaasSettings() {
     try {
       setIsLoading(true);
       
-      // Use the findPayments function from invoiceService
+      // Use the getPayments function from asaasService directly
       const result = await asaasService.getPayments(
         buildQueryString(data)
       );

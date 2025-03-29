@@ -3,7 +3,7 @@ import { Invoice, InvoiceFormData } from '@/models/invoice';
 import { Client } from '@/models/client';
 import { invoiceDataService } from './invoiceDataService';
 import { invoiceExportService } from './invoiceExportService';
-import { asaasService } from './asaasService';
+import { asaasService, AsaasPaymentsResponse } from './asaasService';
 
 // Re-export the invoice service functionality from its modules
 export type { Invoice, InvoiceFormData } from '@/models/invoice';
@@ -33,23 +33,6 @@ interface AsaasPaymentResult {
   payment_info: AsaasPixQrCodeResponse | { bankSlipUrl?: string; identificationField?: string };
   company_id?: string;
   company_name?: string;
-}
-
-interface AsaasPaymentsQueryResponse {
-  data: Array<{
-    id: string;
-    status: string;
-    dueDate: string;
-    value: number;
-    description: string;
-    billingType: string;
-    bankSlipUrl?: string;
-    invoiceUrl?: string;
-  }>;
-  hasMore: boolean;
-  totalCount: number;
-  limit: number;
-  offset: number;
 }
 
 export const invoiceService = {
@@ -132,7 +115,7 @@ export const invoiceService = {
     customer?: string;
     billingType?: string;
     status?: string;
-  }) {
+  }): Promise<AsaasPaymentsResponse> {
     try {
       if (!asaasService.isConfigured()) {
         throw new Error('API Asaas não configurada');

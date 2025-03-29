@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { Client } from '@/models/client';
 import { Invoice, InvoiceFormData } from '@/models/invoice';
@@ -55,7 +54,7 @@ interface AsaasCustomersResponse {
   offset: number;
 }
 
-interface AsaasPayment {
+export interface AsaasPayment {
   id: string;
   status: string;
   dueDate: string;
@@ -68,7 +67,7 @@ interface AsaasPayment {
   externalReference?: string;
 }
 
-interface AsaasPaymentsResponse {
+export interface AsaasPaymentsResponse {
   data: AsaasPayment[];
   hasMore: boolean;
   totalCount: number;
