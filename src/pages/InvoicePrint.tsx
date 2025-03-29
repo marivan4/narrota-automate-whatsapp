@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,12 +8,12 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { Loader2, Printer, Download, Send, ArrowLeft } from 'lucide-react';
 import { mockInvoices } from '@/data/mockInvoices';
-import { InvoiceType } from '@/models/invoice';
+import { Invoice } from '@/models/invoice';
 
 const InvoicePrint: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [invoice, setInvoice] = useState<InvoiceType | null>(null);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,9 +65,9 @@ const InvoicePrint: React.FC = () => {
       
       // Add invoice information
       doc.setFontSize(10);
-      doc.text(`Fatura #: ${invoice.number}`, 140, 32);
-      doc.text(`Data de Emissão: ${new Date(invoice.issueDate).toLocaleDateString('pt-BR')}`, 140, 38);
-      doc.text(`Vencimento: ${new Date(invoice.dueDate).toLocaleDateString('pt-BR')}`, 140, 44);
+      doc.text(`Fatura #: ${invoice.invoice_number}`, 140, 32);
+      doc.text(`Data de Emissão: ${new Date(invoice.issue_date).toLocaleDateString('pt-BR')}`, 140, 38);
+      doc.text(`Vencimento: ${new Date(invoice.due_date).toLocaleDateString('pt-BR')}`, 140, 44);
       
       // Add client information
       doc.setFontSize(11);
@@ -77,9 +76,9 @@ const InvoicePrint: React.FC = () => {
       doc.setTextColor(80, 80, 80);
       doc.setFontSize(10);
       doc.text(invoice.client.name, 14, 66);
-      doc.text(`CPF/CNPJ: ${invoice.client.document}`, 14, 72);
-      doc.text(`${invoice.client.address}`, 14, 78);
-      doc.text(`${invoice.client.city}, ${invoice.client.state}, ${invoice.client.zipCode}`, 14, 84);
+      doc.text(`CPF/CNPJ: ${invoice.client.document || 'N/A'}`, 14, 72);
+      doc.text(`${invoice.client.address || 'Endereço não informado'}`, 14, 78);
+      doc.text(`${invoice.client.city || ''}, ${invoice.client.state || ''}, ${invoice.client.zipCode || ''}`, 14, 84);
       doc.text(`Email: ${invoice.client.email}`, 14, 90);
       doc.text(`Telefone: ${invoice.client.phone}`, 14, 96);
       
@@ -109,17 +108,17 @@ const InvoicePrint: React.FC = () => {
       doc.autoTable({
         startY: 110,
         head: [['Item', 'Descrição', 'Quantidade', 'Preço Unitário', 'Total']],
-        body: invoice.items.map(item => [
-          item.id.toString(),
+        body: (invoice.items || []).map((item: any, index: number) => [
+          index + 1,
           item.description,
           item.quantity.toString(),
           `R$ ${item.price.toFixed(2)}`,
           `R$ ${(item.quantity * item.price).toFixed(2)}`
         ]),
         foot: [
-          ['', '', '', 'Subtotal:', `R$ ${invoice.subtotal.toFixed(2)}`],
-          ['', '', '', 'Desconto:', `R$ ${invoice.discount.toFixed(2)}`],
-          ['', '', '', 'Total:', `R$ ${(invoice.subtotal - invoice.discount).toFixed(2)}`],
+          ['', '', '', 'Subtotal:', `R$ ${invoice.amount.toFixed(2)}`],
+          ['', '', '', 'Imposto:', `R$ ${invoice.tax_amount.toFixed(2)}`],
+          ['', '', '', 'Total:', `R$ ${invoice.total_amount.toFixed(2)}`],
         ],
         theme: 'striped',
         headStyles: {
@@ -163,7 +162,7 @@ const InvoicePrint: React.FC = () => {
       doc.text("Gerado por GPS Tracker Sistema de Rastreamento", 14, 280);
       
       // Save the PDF
-      doc.save(`fatura_${invoice.number.replace(/\//g, '-')}.pdf`);
+      doc.save(`fatura_${invoice.invoice_number.replace(/\//g, '-')}.pdf`);
       toast.success("PDF da fatura gerado com sucesso!");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -255,14 +254,14 @@ const InvoicePrint: React.FC = () => {
             </div>
             <div className="mt-4 md:mt-0 text-right">
               <h2 className="text-lg font-semibold">Fatura</h2>
-              <p className="text-muted-foreground">#{invoice.number}</p>
+              <p className="text-muted-foreground">#{invoice.invoice_number}</p>
               <p className="text-muted-foreground">
                 <span className="font-medium">Emissão:</span>{' '}
-                {new Date(invoice.issueDate).toLocaleDateString('pt-BR')}
+                {new Date(invoice.issue_date).toLocaleDateString('pt-BR')}
               </p>
               <p className="text-muted-foreground">
                 <span className="font-medium">Vencimento:</span>{' '}
-                {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
+                {new Date(invoice.due_date).toLocaleDateString('pt-BR')}
               </p>
               <div className="mt-2">
                 <span

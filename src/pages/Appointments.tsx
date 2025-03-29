@@ -702,7 +702,7 @@ const Appointments: React.FC = () => {
                           const count = getAppointmentCountForDate(props.date);
                           return (
                             <div className="relative w-full h-full flex items-center justify-center">
-                              {props.day}
+                              {props.children}
                               {count > 0 && (
                                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 -mb-1">
                                   <div className="w-4 h-1 bg-blue-500 rounded-full"></div>
