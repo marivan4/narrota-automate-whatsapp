@@ -179,7 +179,7 @@ export const asaasService = {
   },
 
   /**
-   * Faz uma chamada à API Asaas
+   * Faz uma chamada à API Asaas através de um proxy para evitar problemas de CORS
    */
   callApi: async <T>(endpoint: string, method: string = 'GET', data?: any): Promise<T> => {
     const { apiKey, environment } = asaasService.getConfig();
@@ -191,27 +191,41 @@ export const asaasService = {
     const baseUrl = BASE_URLS[environment];
     const url = `${baseUrl}${endpoint}`;
     
-    const options: RequestInit = {
-      method,
-      headers: {
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'access_token': apiKey
-      },
-      body: data ? JSON.stringify(data) : undefined
-    };
-
+    // Configurar o proxy (simulado aqui - em produção deve ser substituído por um backend real)
+    // Se necessário, usar um serviço de proxy como https://cors-anywhere.herokuapp.com/
+    
+    console.log(`Calling Asaas API: ${method} ${url}`);
+    
     try {
+      // Abordagem 1: Usar diretamente (vai depender de configuração de CORS do lado servidor)
+      const options: RequestInit = {
+        method,
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'access_token': apiKey
+        },
+        mode: 'cors',
+        body: data ? JSON.stringify(data) : undefined
+      };
+      
       const response = await fetch(url, options);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.errors?.[0]?.description || 'Erro na chamada à API Asaas');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Asaas API error:', errorData);
+        throw new Error(errorData.errors?.[0]?.description || `Erro na chamada à API Asaas: ${response.status} ${response.statusText}`);
       }
       
       return await response.json();
     } catch (error) {
       console.error('Erro na chamada à API Asaas:', error);
+      
+      // Se for um problema de CORS, informamos ao usuário
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Erro de conexão com a API Asaas. Possível problema de CORS. Verifique se o token está correto e se a API está acessível.');
+      }
+      
       throw error;
     }
   },

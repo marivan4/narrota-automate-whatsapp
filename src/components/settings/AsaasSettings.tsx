@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Check, CreditCard, RefreshCw, Search } from "lucide-react";
+import { AlertCircle, Check, CreditCard, RefreshCw, Search, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { asaasService, AsaasPayment, AsaasPaymentsResponse } from "@/services/asaasService";
 import { useAuth } from '@/contexts/AuthContext';
@@ -62,6 +63,7 @@ export function AsaasSettings() {
   const [payments, setPayments] = useState<AsaasPayment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [companyId, setCompanyId] = useState<string>('');
+  const [configError, setConfigError] = useState<string | null>(null);
 
   // Inicializa o formulário com os dados salvos
   const form = useForm<AsaasFormValues>({
@@ -103,6 +105,8 @@ export function AsaasSettings() {
 
   async function onSubmit(data: AsaasFormValues) {
     try {
+      setIsLoading(true);
+      setConfigError(null);
       const currentCompanyId = companyId || authState.user?.id || 'default';
       
       // Salva a configuração
@@ -127,6 +131,10 @@ export function AsaasSettings() {
         localStorage.removeItem('asaas_config');
       }
       
+      console.log('Testing Asaas API configuration...');
+      console.log('API Key (first 5 chars):', data.apiKey.substring(0, 5));
+      console.log('Environment:', data.environment);
+      
       // Verifica se a configuração é válida fazendo uma chamada simples
       await asaasService.callApi('/customers?limit=1');
       
@@ -134,7 +142,18 @@ export function AsaasSettings() {
       toast.success("Configuração da API Asaas salva com sucesso!");
     } catch (error) {
       console.error('Erro ao validar configuração Asaas:', error);
-      toast.error("Erro ao configurar API Asaas. Verifique o token de acesso.");
+      
+      // Extrair mensagem de erro mais amigável
+      let errorMessage = "Erro ao configurar API Asaas. Verifique o token de acesso.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setConfigError(errorMessage);
+      toast.error(errorMessage);
+      setIsConfigured(false);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -156,7 +175,13 @@ export function AsaasSettings() {
       }
     } catch (error) {
       console.error('Erro ao buscar pagamentos:', error);
-      toast.error("Erro ao consultar pagamentos. Verifique sua conexão com a API Asaas.");
+      
+      let errorMessage = "Erro ao consultar pagamentos. Verifique sua conexão com a API Asaas.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -189,12 +214,32 @@ export function AsaasSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isConfigured && (
+            {isConfigured && !configError && (
               <Alert className="mb-6 border-green-500 text-green-500">
                 <Check className="h-4 w-4" />
                 <AlertTitle>Integração configurada</AlertTitle>
                 <AlertDescription>
                   Sua integração com a API Asaas está configurada e pronta para uso.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {configError && (
+              <Alert className="mb-6 border-amber-500 text-amber-700">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Erro na configuração</AlertTitle>
+                <AlertDescription>
+                  {configError}
+                  <div className="mt-2">
+                    <p className="text-xs text-amber-600">
+                      Dicas para resolver:
+                      <ul className="list-disc pl-4 mt-1">
+                        <li>Verifique se o token de acesso está correto</li>
+                        <li>Confirme se você selecionou o ambiente correto (Sandbox ou Produção)</li>
+                        <li>Certifique-se que o token tem as permissões necessárias</li>
+                      </ul>
+                    </p>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
@@ -236,6 +281,10 @@ export function AsaasSettings() {
                       </FormControl>
                       <FormDescription>
                         Token de acesso fornecido pela Asaas em sua área de desenvolvedor.
+                        <br />
+                        <span className="text-xs text-amber-600">
+                          Tokens de sandbox começam com $aact_YourAccessToken
+                        </span>
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -294,7 +343,16 @@ export function AsaasSettings() {
                 />
                 
                 <CardFooter className="flex justify-end pt-6 px-0">
-                  <Button type="submit">Salvar configuração</Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Verificando...
+                      </>
+                    ) : (
+                      "Salvar configuração"
+                    )}
+                  </Button>
                 </CardFooter>
               </form>
             </Form>
