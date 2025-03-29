@@ -76,8 +76,16 @@ const ClientForm: React.FC<ClientFormProps> = ({
           toast.loading("Sincronizando cliente com Asaas...", { id: "sync-asaas" });
           // Convertendo para o tipo correto de Cliente
           const clientData: Client = {
-            ...data,
             id: "temp-id",
+            name: data.name, // Garantir que todos os campos obrigatórios estejam preenchidos
+            email: data.email,
+            phone: data.phone,
+            document: data.document,
+            address: data.address,
+            city: data.city,
+            state: data.state,
+            zipCode: data.zipCode,
+            role: data.role,
             created_at: new Date(),
             updated_at: new Date()
           };

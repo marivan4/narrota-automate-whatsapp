@@ -120,6 +120,17 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
     }
   };
 
+  // Make sure invoice is a complete Invoice type with all required properties
+  const completeInvoice: Invoice = {
+    ...invoice,
+    // Ensure all required fields from the Invoice interface are present
+    items: invoice.items || [],
+    subtotal: invoice.subtotal || invoice.amount || 0,
+    discount: invoice.discount || 0,
+    created_at: invoice.created_at || new Date(),
+    updated_at: invoice.updated_at || new Date()
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-start justify-between">
@@ -251,7 +262,7 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
           </Button>
           {asaasService.isConfigured() && invoice.status !== 'paid' && (
             <AsaasPaymentDialog
-              invoice={invoice}
+              invoice={completeInvoice}  // Use the complete invoice object
               client={invoice.client}
               onSuccess={(data) => {
                 console.log("Pagamento gerado:", data);

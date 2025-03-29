@@ -8,6 +8,21 @@ import { asaasService } from './asaasService';
 // Re-export the invoice service functionality from its modules
 export type { Invoice, InvoiceFormData } from '@/models/invoice';
 
+interface AsaasPaymentResponse {
+  id: string;
+  status: string;
+  dueDate: string;
+  value: number;
+  description: string;
+  bankSlipUrl?: string;
+}
+
+interface AsaasPixQrCodeResponse {
+  encodedImage: string;
+  payload: string;
+  expirationDate: string;
+}
+
 interface AsaasPaymentResult {
   payment_id: string;
   status: string;
@@ -15,7 +30,7 @@ interface AsaasPaymentResult {
   value: number;
   description: string;
   payment_type: 'PIX' | 'BOLETO';
-  payment_info: any;
+  payment_info: AsaasPixQrCodeResponse | { bankSlipUrl?: string; identificationField?: string };
 }
 
 export const invoiceService = {
@@ -55,6 +70,20 @@ export const invoiceService = {
         paymentType
       );
       
+      let paymentInfo;
+      
+      // Gera informações específicas do tipo de pagamento
+      if (paymentType === 'PIX') {
+        paymentInfo = await asaasService.getPixQrCode(payment.id);
+      } else {
+        // Para boleto, obtém a URL e a linha digitável
+        const identificationField = await asaasService.getBoletoIdentificationField(payment.id);
+        paymentInfo = { 
+          bankSlipUrl: payment.bankSlipUrl,
+          identificationField
+        };
+      }
+      
       // Retorna os detalhes do pagamento
       return {
         payment_id: payment.id,
@@ -63,10 +92,7 @@ export const invoiceService = {
         value: payment.value,
         description: payment.description,
         payment_type: paymentType,
-        // Depende do tipo de pagamento
-        payment_info: paymentType === 'PIX' 
-          ? await asaasService.getPixQrCode(payment.id)
-          : { bankSlipUrl: payment.bankSlipUrl }
+        payment_info: paymentInfo
       };
     } catch (error) {
       console.error('Erro ao criar pagamento no Asaas:', error);

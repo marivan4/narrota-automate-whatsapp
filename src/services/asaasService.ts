@@ -21,6 +21,38 @@ const BASE_URLS = {
 };
 
 // Define response types for API calls
+interface AsaasCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  mobilePhone?: string;
+  address?: string;
+  addressNumber?: string;
+  complement?: string;
+  province?: string;
+  postalCode?: string;
+  cpfCnpj: string;
+  personType?: 'FISICA' | 'JURIDICA';
+  city?: string;
+  state?: string;
+  country?: string;
+  externalReference?: string;
+  notificationDisabled?: boolean;
+  additionalEmails?: string;
+  municipalInscription?: string;
+  stateInscription?: string;
+  observations?: string;
+}
+
+interface AsaasCustomersResponse {
+  data: AsaasCustomer[];
+  hasMore: boolean;
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
 interface AsaasPaymentResponse {
   id: string;
   status: string;
@@ -112,9 +144,9 @@ export const asaasService = {
   /**
    * Verifica se um cliente existe pelo CPF/CNPJ
    */
-  findCustomerByCpfCnpj: async (cpfCnpj: string) => {
+  findCustomerByCpfCnpj: async (cpfCnpj: string): Promise<AsaasCustomer | null> => {
     try {
-      const result = await asaasService.callApi<{ data: any[] }>(`/customers?cpfCnpj=${cpfCnpj}`);
+      const result = await asaasService.callApi<AsaasCustomersResponse>(`/customers?cpfCnpj=${cpfCnpj}`);
       return result.data.length > 0 ? result.data[0] : null;
     } catch (error) {
       console.error('Erro ao buscar cliente:', error);
@@ -125,7 +157,7 @@ export const asaasService = {
   /**
    * Cria um cliente no Asaas
    */
-  createCustomer: async (client: Client) => {
+  createCustomer: async (client: Client): Promise<string> => {
     const customerData = {
       name: client.name,
       email: client.email,
@@ -153,7 +185,7 @@ export const asaasService = {
   /**
    * Cria ou atualiza um cliente no Asaas
    */
-  syncCustomer: async (client: Client) => {
+  syncCustomer: async (client: Client): Promise<string> => {
     try {
       // Verifica se o cliente já existe no Asaas
       const existingCustomer = await asaasService.findCustomerByCpfCnpj(client.document);
@@ -174,7 +206,7 @@ export const asaasService = {
   /**
    * Cria um pagamento via PIX ou Boleto
    */
-  createPayment: async (invoice: Invoice, client: Client, paymentType: 'PIX' | 'BOLETO') => {
+  createPayment: async (invoice: Invoice, client: Client, paymentType: 'PIX' | 'BOLETO'): Promise<AsaasPaymentResponse> => {
     if (!client.asaas_id) {
       throw new Error('Cliente não sincronizado com Asaas');
     }
@@ -201,7 +233,7 @@ export const asaasService = {
   /**
    * Obtém o QR Code PIX para um pagamento
    */
-  getPixQrCode: async (paymentId: string) => {
+  getPixQrCode: async (paymentId: string): Promise<AsaasPixQrCodeResponse> => {
     try {
       const result = await asaasService.callApi<AsaasPixQrCodeResponse>(`/payments/${paymentId}/pixQrCode`);
       return result;
@@ -214,7 +246,7 @@ export const asaasService = {
   /**
    * Obtém a URL do boleto para um pagamento
    */
-  getBoletoUrl: async (paymentId: string) => {
+  getBoletoUrl: async (paymentId: string): Promise<string | undefined> => {
     try {
       const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}`);
       return result.bankSlipUrl;
@@ -227,7 +259,7 @@ export const asaasService = {
   /**
    * Obtém a linha digitável do boleto
    */
-  getBoletoIdentificationField: async (paymentId: string) => {
+  getBoletoIdentificationField: async (paymentId: string): Promise<string> => {
     try {
       const result = await asaasService.callApi<AsaasIdentificationFieldResponse>(`/payments/${paymentId}/identificationField`);
       return result.identificationField;
@@ -240,7 +272,7 @@ export const asaasService = {
   /**
    * Verifica o status de um pagamento
    */
-  getPaymentStatus: async (paymentId: string) => {
+  getPaymentStatus: async (paymentId: string): Promise<string> => {
     try {
       const result = await asaasService.callApi<AsaasPaymentResponse>(`/payments/${paymentId}`);
       return result.status;
