@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,11 +23,12 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Check, CreditCard, RefreshCw, Search, AlertTriangle } from "lucide-react";
+import { AlertCircle, Check, CreditCard, RefreshCw, Search, AlertTriangle, ListFilter } from "lucide-react";
 import { toast } from "sonner";
 import { asaasService, AsaasPayment, AsaasPaymentsResponse } from "@/services/asaasService";
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from 'react-router-dom';
 
 const asaasFormSchema = z.object({
   apiKey: z.string().min(10, {
@@ -219,7 +219,15 @@ export function AsaasSettings() {
                 <Check className="h-4 w-4" />
                 <AlertTitle>Integração configurada</AlertTitle>
                 <AlertDescription>
-                  Sua integração com a API Asaas está configurada e pronta para uso.
+                  <div className="flex justify-between items-center">
+                    <span>Sua integração com a API Asaas está configurada e pronta para uso.</span>
+                    <Button variant="outline" size="sm" asChild className="ml-2">
+                      <Link to="/asaas-payments">
+                        <ListFilter className="h-4 w-4 mr-2" />
+                        Ver Todas as Cobranças
+                      </Link>
+                    </Button>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}

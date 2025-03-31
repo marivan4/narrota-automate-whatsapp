@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 import { Client } from '@/models/client';
 import { Invoice, InvoiceFormData } from '@/models/invoice';
@@ -54,25 +55,75 @@ interface AsaasCustomersResponse {
   offset: number;
 }
 
+// Definindo tipos mais completos para pagamentos
+export interface AsaasCreditCard {
+  creditCardNumber?: string;
+  creditCardBrand?: string;
+  creditCardToken?: string | null;
+}
+
+export interface AsaasFineInterest {
+  value: number;
+}
+
+export interface AsaasDiscount {
+  value: number;
+  dueDateLimitDays: number;
+  type: string;
+}
+
+export interface AsaasRefund {
+  dateCreated: string;
+  status: string;
+  value: number;
+  description?: string | null;
+  effectiveDate: string;
+  transactionReceiptUrl?: string | null;
+}
+
 export interface AsaasPayment {
   id: string;
   status: string;
   dueDate: string;
   value: number;
+  netValue?: number;
   description: string;
   billingType: string;
   bankSlipUrl?: string;
   invoiceUrl?: string;
   customer: string;
   externalReference?: string;
+  dateCreated?: string;
+  creditCard?: AsaasCreditCard;
+  fine?: AsaasFineInterest;
+  interest?: AsaasFineInterest;
+  discount?: AsaasDiscount;
+  clientPaymentDate?: string | null;
+  paymentDate?: string | null;
+  invoiceNumber?: string;
+  deleted?: boolean;
+  anticipated?: boolean;
+  anticipable?: boolean;
+  creditDate?: string;
+  estimatedCreditDate?: string;
+  transactionReceiptUrl?: string | null;
+  nossoNumero?: string;
+  originalValue?: number | null;
+  interestValue?: number | null;
+  originalDueDate?: string;
+  paymentLink?: string | null;
+  subscription?: string | null;
+  installment?: string | null;
+  refunds?: AsaasRefund[];
 }
 
 export interface AsaasPaymentsResponse {
-  data: AsaasPayment[];
+  object: string;
   hasMore: boolean;
   totalCount: number;
   limit: number;
   offset: number;
+  data: AsaasPayment[];
 }
 
 interface AsaasPaymentResponse {
@@ -191,13 +242,11 @@ export const asaasService = {
     const baseUrl = BASE_URLS[environment];
     const url = `${baseUrl}${endpoint}`;
     
-    // Configurar o proxy (simulado aqui - em produção deve ser substituído por um backend real)
-    // Se necessário, usar um serviço de proxy como https://cors-anywhere.herokuapp.com/
-    
-    console.log(`Calling Asaas API: ${method} ${url}`);
+    // Logs para depuração
+    console.log(`Calling Asaas API [${environment}]: ${method} ${url}`);
     
     try {
-      // Abordagem 1: Usar diretamente (vai depender de configuração de CORS do lado servidor)
+      // Abordagem com tratamento de CORS
       const options: RequestInit = {
         method,
         headers: {
@@ -211,19 +260,32 @@ export const asaasService = {
       
       const response = await fetch(url, options);
       
+      // Log da resposta para depuração
+      console.log(`Asaas API response status: ${response.status}`);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('Asaas API error:', errorData);
-        throw new Error(errorData.errors?.[0]?.description || `Erro na chamada à API Asaas: ${response.status} ${response.statusText}`);
+        
+        // Formata uma mensagem de erro mais amigável
+        let errorMessage = `Erro na API Asaas: ${response.status} ${response.statusText}`;
+        if (errorData?.errors?.[0]?.description) {
+          errorMessage = `Erro API Asaas: ${errorData.errors[0].description}`;
+        }
+        
+        throw new Error(errorMessage);
       }
       
       return await response.json();
     } catch (error) {
       console.error('Erro na chamada à API Asaas:', error);
       
-      // Se for um problema de CORS, informamos ao usuário
+      // Tratamento de erros específicos
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('Possível erro de CORS ou conexão');
         throw new Error('Erro de conexão com a API Asaas. Possível problema de CORS. Verifique se o token está correto e se a API está acessível.');
+      } else if (error instanceof Error && error.message.includes('NetworkError')) {
+        throw new Error('Erro de rede ao conectar à API Asaas. Verifique sua conexão de internet.');
       }
       
       throw error;
@@ -372,10 +434,13 @@ export const asaasService = {
   },
 
   /**
-   * Consulta pagamentos
+   * Consulta pagamentos com a URL completa (incluindo parâmetros de query)
+   * @param queryParams String de parâmetros de consulta, ex: "?customer=123&status=PENDING"
+   * @returns Resposta da API Asaas com a lista de pagamentos
    */
   getPayments: async (queryParams: string = ''): Promise<AsaasPaymentsResponse> => {
     try {
+      console.log(`Consultando pagamentos com parâmetros: ${queryParams}`);
       return await asaasService.callApi<AsaasPaymentsResponse>(`/payments${queryParams}`);
     } catch (error) {
       console.error('Erro ao buscar pagamentos:', error);

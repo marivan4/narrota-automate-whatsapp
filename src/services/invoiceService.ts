@@ -3,7 +3,7 @@ import { Invoice, InvoiceFormData } from '@/models/invoice';
 import { Client } from '@/models/client';
 import { invoiceDataService } from './invoiceDataService';
 import { invoiceExportService } from './invoiceExportService';
-import { asaasService, AsaasPaymentsResponse } from './asaasService';
+import { asaasService, AsaasPaymentsResponse, AsaasPayment } from './asaasService';
 
 // Re-export the invoice service functionality from its modules
 export type { Invoice, InvoiceFormData } from '@/models/invoice';

@@ -25,6 +25,7 @@ import Alerts from "./pages/Alerts";
 import Vehicles from "./pages/Vehicles";
 import Appointments from "./pages/Appointments";
 import InvoicePrint from "./pages/InvoicePrint";
+import AsaasPaymentsList from "./pages/AsaasPaymentsList";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/vehicles" element={<Vehicles />} />
             <Route path="/appointments" element={<Appointments />} />
+            <Route path="/asaas-payments" element={<AsaasPaymentsList />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
