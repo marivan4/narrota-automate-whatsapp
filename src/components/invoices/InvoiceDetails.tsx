@@ -10,7 +10,7 @@ import { CheckCircle, Clock, AlertCircle, XCircle, Send, FileDown, Printer, Aler
 import { toast } from 'sonner';
 import { whatsappService } from '@/utils/whatsappService';
 import { AsaasPaymentDialog } from './AsaasPaymentDialog';
-import { asaasService } from '@/services/asaasService';
+import { asaasService } from '@/services/asaas';
 import { Invoice } from '@/models/invoice';
 
 interface InvoiceDetailsProps {
