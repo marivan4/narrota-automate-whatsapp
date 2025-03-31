@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { asaasService } from "@/services/asaasService";
+import { asaasService } from "@/services/asaas";
 import { Client } from "@/models/client";
 
 const clientSchema = z.object({

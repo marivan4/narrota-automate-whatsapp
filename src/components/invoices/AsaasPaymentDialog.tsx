@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -17,7 +16,7 @@ import { toast } from "sonner";
 import { CreditCard, FileText, QrCode, Loader2 } from "lucide-react";
 import { Invoice } from '@/models/invoice';
 import { invoiceService } from '@/services/invoiceService';
-import { asaasService } from '@/services/asaasService';
+import { asaasService } from '@/services/asaas';
 
 interface AsaasPaymentDialogProps {
   invoice: Invoice;

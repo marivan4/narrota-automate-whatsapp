@@ -28,7 +28,7 @@ import * as z from "zod";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { ArrowLeft, Search, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
-import { asaasService, AsaasPayment } from '@/services/asaasService';
+import { asaasService, AsaasPayment } from '@/services/asaas';
 import {
   Table,
   TableBody,

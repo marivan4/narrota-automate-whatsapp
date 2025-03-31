@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -25,7 +26,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Check, CreditCard, RefreshCw, Search, AlertTriangle, ListFilter } from "lucide-react";
 import { toast } from "sonner";
-import { asaasService, AsaasPayment, AsaasPaymentsResponse } from "@/services/asaasService";
+import { asaasService, AsaasPayment, AsaasPaymentsResponse } from "@/services/asaas";
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from 'react-router-dom';

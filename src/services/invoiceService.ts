@@ -3,25 +3,10 @@ import { Invoice, InvoiceFormData } from '@/models/invoice';
 import { Client } from '@/models/client';
 import { invoiceDataService } from './invoiceDataService';
 import { invoiceExportService } from './invoiceExportService';
-import { asaasService, AsaasPaymentsResponse, AsaasPayment } from './asaasService';
+import { asaasService, AsaasPayment, AsaasPaymentsResponse, AsaasPixQrCodeResponse } from './asaas';
 
 // Re-export the invoice service functionality from its modules
 export type { Invoice, InvoiceFormData } from '@/models/invoice';
-
-interface AsaasPaymentResponse {
-  id: string;
-  status: string;
-  dueDate: string;
-  value: number;
-  description: string;
-  bankSlipUrl?: string;
-}
-
-interface AsaasPixQrCodeResponse {
-  encodedImage: string;
-  payload: string;
-  expirationDate: string;
-}
 
 interface AsaasPaymentResult {
   payment_id: string;
@@ -53,22 +38,22 @@ export const invoiceService = {
         throw new Error('API Asaas não configurada');
       }
       
-      // Obtém a configuração atual para identificar a empresa
+      // Get current configuration to identify the company
       const config = asaasService.getConfig();
       
-      // Verifica se o cliente já está sincronizado com o Asaas
+      // Check if the client is already synchronized with Asaas
       let asaasCustomerId = client.asaas_id;
       
-      // Se não estiver, sincroniza o cliente
+      // If not, synchronize the client
       if (!asaasCustomerId) {
         asaasCustomerId = await asaasService.syncCustomer(client);
-        // Aqui seria ideal atualizar o cliente no banco de dados
-        // com o ID do Asaas, mas como estamos trabalhando com dados
-        // simulados, vamos apenas logar a informação
+        // Ideally we would update the client in the database
+        // with the Asaas ID, but since we're working with simulated data,
+        // we'll just log the information
         console.log(`Cliente sincronizado com Asaas: ${asaasCustomerId}`);
       }
       
-      // Cria o pagamento
+      // Create the payment
       const payment = await asaasService.createPayment(
         invoice, 
         { ...client, asaas_id: asaasCustomerId }, 
@@ -77,11 +62,11 @@ export const invoiceService = {
       
       let paymentInfo;
       
-      // Gera informações específicas do tipo de pagamento
+      // Generate specific payment type information
       if (paymentType === 'PIX') {
         paymentInfo = await asaasService.getPixQrCode(payment.id);
       } else {
-        // Para boleto, obtém a URL e a linha digitável
+        // For boleto, get URL and the identification field
         const identificationField = await asaasService.getBoletoIdentificationField(payment.id);
         paymentInfo = { 
           bankSlipUrl: payment.bankSlipUrl,
@@ -89,7 +74,7 @@ export const invoiceService = {
         };
       }
       
-      // Retorna os detalhes do pagamento
+      // Return payment details
       return {
         payment_id: payment.id,
         status: payment.status,
@@ -108,7 +93,7 @@ export const invoiceService = {
   },
   
   /**
-   * Consulta pagamentos por filtros
+   * Find payments by filters
    */
   async findPayments(filters: {
     reference?: string;
@@ -121,11 +106,11 @@ export const invoiceService = {
         throw new Error('API Asaas não configurada');
       }
       
-      // Constrói a query string para a busca
+      // Build query string for search
       const queryParams = Object.entries(filters)
         .filter(([_, value]) => value && value !== 'ALL')
         .map(([key, value]) => {
-          // Mapeia as chaves para os nomes de parâmetros da API Asaas
+          // Map keys to Asaas API parameter names
           const paramMap: Record<string, string> = {
             reference: 'externalReference',
             customer: 'customer',
@@ -138,7 +123,7 @@ export const invoiceService = {
       
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
       
-      // Busca os pagamentos
+      // Get payments
       return await asaasService.getPayments(queryString);
     } catch (error) {
       console.error('Erro ao consultar pagamentos:', error);
