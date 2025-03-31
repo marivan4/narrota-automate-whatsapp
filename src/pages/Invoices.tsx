@@ -42,7 +42,9 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Invoice, invoiceService } from '@/services/invoiceService';
+import { invoiceService } from '@/services/invoiceService';
+// Import Invoice directly from the models
+import { Invoice } from '@/models/invoice';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
