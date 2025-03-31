@@ -1,4 +1,3 @@
-
 // Assuming the invoiceService file might import asaasService
 // Import from the new path
 import { asaasService } from '@/services/asaas';
@@ -152,6 +151,5 @@ export const invoiceService = {
   }
 };
 
-// Re-export the Invoice type from models
-export { Invoice } from '@/models/invoice';
-
+// Re-export the Invoice type from models - using 'export type' for isolatedModules compatibility
+export type { Invoice } from '@/models/invoice';
