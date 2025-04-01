@@ -263,6 +263,7 @@ export function InvoiceForm({ defaultValues, onSubmit, isSubmitting = false, con
                           <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
                           <SelectItem value="debit_card">Cartão de Débito</SelectItem>
                           <SelectItem value="bank_transfer">Transferência Bancária</SelectItem>
+                          <SelectItem value="boleto">Boleto Bancário</SelectItem>
                           <SelectItem value="cash">Dinheiro</SelectItem>
                           <SelectItem value="pix">PIX</SelectItem>
                         </SelectContent>

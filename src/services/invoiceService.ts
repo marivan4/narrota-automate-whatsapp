@@ -1,9 +1,10 @@
+
 // Assuming the invoiceService file might import asaasService
 // Import from the new path
 import { asaasService } from '@/services/asaas';
 import { InvoiceFormData } from '@/models/invoice';
 import { Client } from '@/models/client';
-import { Invoice } from '@/models/invoice'; // Import Invoice from models instead of defining it locally
+import { Invoice } from '@/models/invoice'; // Import Invoice from models
 
 // Use import.meta.env instead of process.env for Vite
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -101,8 +102,11 @@ export const invoiceService = {
     }
   },
 
-  // Export invoices to CSV - Import this from invoiceExportService
-  exportToCSV: () => {
+  // Export invoices to CSV
+  exportToCSV: async (): Promise<string> => {
+    // Get invoices data first
+    const invoices = await invoiceService.getInvoices();
+    
     // Create CSV headers
     const headers = [
       'ID',
@@ -118,16 +122,12 @@ export const invoiceService = {
       'Data de Pagamento',
       'Método de Pagamento'
     ].join(',');
-
-    // Import invoices data (this would normally fetch from API)
-    // For now using a hardcoded approach to fix the immediate error
-    // In a real implementation, this should fetch the actual invoices data
-    const invoices = []; // This would be replaced with actual data
     
     // Format dates
-    const formatDate = (date?: Date) => {
+    const formatDate = (date?: Date | string): string => {
       if (!date) return '';
-      return date instanceof Date ? date.toLocaleDateString('pt-BR') : '';
+      const d = date instanceof Date ? date : new Date(date);
+      return !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR') : '';
     };
 
     // Create CSV rows
@@ -135,7 +135,7 @@ export const invoiceService = {
       invoice.id,
       invoice.invoice_number,
       invoice.contract_id,
-      invoice.client.name,
+      invoice.client?.name || '',
       formatDate(invoice.issue_date),
       formatDate(invoice.due_date),
       invoice.amount.toFixed(2).replace('.', ','),

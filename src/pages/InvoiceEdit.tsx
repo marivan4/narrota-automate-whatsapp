@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types';
@@ -19,7 +20,10 @@ const InvoiceEdit = () => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Fetch invoice data
+  // Determine if this is a new invoice
+  const isNew = !id || id === 'new';
+
+  // Fetch invoice data if not new
   const {
     data: invoice,
     isLoading,
@@ -28,7 +32,7 @@ const InvoiceEdit = () => {
   } = useQuery({
     queryKey: ['invoice', id],
     queryFn: () => invoiceService.getInvoiceById(id!),
-    enabled: !!id && id !== 'new',
+    enabled: !isNew && !!id,
   });
 
   // Mock contracts data (would be from a real API in production)
@@ -64,7 +68,7 @@ const InvoiceEdit = () => {
     },
     onError: (error) => {
       console.error('Erro ao criar fatura:', error);
-      toast.error('Erro ao criar fatura');
+      toast.error('Erro ao criar fatura. Verifique os dados e tente novamente.');
     }
   });
 
@@ -93,7 +97,7 @@ const InvoiceEdit = () => {
     },
     onError: (error) => {
       console.error('Erro ao atualizar fatura:', error);
-      toast.error('Erro ao atualizar fatura');
+      toast.error('Erro ao atualizar fatura. Verifique os dados e tente novamente.');
     }
   });
 
@@ -113,7 +117,8 @@ const InvoiceEdit = () => {
 
   // Handle form submission
   const handleSubmit = (data: InvoiceFormSubmitValues) => {
-    if (id === 'new') {
+    console.log('Form data submitted:', data);
+    if (isNew) {
       createMutation.mutate(data);
     } else {
       updateMutation.mutate(data);
@@ -137,7 +142,7 @@ const InvoiceEdit = () => {
   }
 
   // Loading state
-  if (id !== 'new' && isLoading) {
+  if (!isNew && isLoading) {
     return (
       <DashboardLayout>
         <div className="container py-8 flex items-center justify-center min-h-[60vh]">
@@ -148,7 +153,7 @@ const InvoiceEdit = () => {
   }
 
   // Error state
-  if (id !== 'new' && isError) {
+  if (!isNew && isError) {
     return (
       <DashboardLayout>
         <div className="container py-8">
@@ -172,7 +177,7 @@ const InvoiceEdit = () => {
       <div className="container py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">
-            {id === 'new' ? 'Nova Fatura' : `Fatura ${invoice?.invoice_number}`}
+            {isNew ? 'Nova Fatura' : `Fatura ${invoice?.invoice_number}`}
           </h1>
           <Button onClick={() => navigate('/invoices')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -180,7 +185,7 @@ const InvoiceEdit = () => {
           </Button>
         </div>
 
-        {id === 'new' ? (
+        {isNew ? (
           <InvoiceForm 
             onSubmit={handleSubmit}
             isSubmitting={createMutation.isPending}
@@ -209,8 +214,8 @@ const InvoiceEdit = () => {
                     defaultValues={{
                       invoice_number: invoice?.invoice_number,
                       contract_id: invoice?.contract_id,
-                      issue_date: invoice?.issue_date,
-                      due_date: invoice?.due_date,
+                      issue_date: invoice?.issue_date ? new Date(invoice.issue_date) : new Date(),
+                      due_date: invoice?.due_date ? new Date(invoice.due_date) : new Date(),
                       amount: invoice?.amount?.toString() || '',
                       tax_amount: invoice?.tax_amount?.toString() || '',
                       payment_method: invoice?.payment_method,

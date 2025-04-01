@@ -54,6 +54,7 @@ const Invoices = () => {
   const { authState, isAuthorized } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
 
   // Function to close dialog
   const closeDialog = () => {
@@ -118,19 +119,27 @@ const Invoices = () => {
   };
 
   // Handle export to CSV
-  const handleExportCSV = () => {
-    const csvContent = invoiceService.exportToCSV();
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'faturas.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success('Faturas exportadas com sucesso!');
+  const handleExportCSV = async () => {
+    try {
+      setIsExporting(true);
+      const csvContent = await invoiceService.exportToCSV();
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'faturas.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Faturas exportadas com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar faturas:', error);
+      toast.error('Erro ao exportar faturas');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Delete invoice mutation
@@ -203,8 +212,17 @@ const Invoices = () => {
                   <Filter className="h-4 w-4 mr-2" />
                   Filtrar
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportCSV}>
-                  <Download className="h-4 w-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleExportCSV}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
                   Exportar
                 </Button>
                 <Button size="sm" onClick={() => navigate('/invoice-edit/new')}>
@@ -244,11 +262,11 @@ const Invoices = () => {
                           <TableCell>{invoice.client.name}</TableCell>
                           <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
                           <TableCell>
-                            {format(invoice.due_date, 'dd/MM/yyyy', { locale: ptBR })}
+                            {format(new Date(invoice.due_date), 'dd/MM/yyyy', { locale: ptBR })}
                           </TableCell>
                           <TableCell>{renderStatusBadge(invoice.status)}</TableCell>
                           <TableCell>
-                            {format(invoice.created_at, 'dd/MM/yyyy', { locale: ptBR })}
+                            {format(new Date(invoice.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
