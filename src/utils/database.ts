@@ -2,18 +2,25 @@
 // Database connection utilities
 import { toast } from "sonner";
 
-// These should be set in your environment variables in production
+// Database configuration - read from environment variables with proper fallbacks
 const DB_CONFIG = {
   host: import.meta.env.VITE_DB_HOST || "localhost",
   user: import.meta.env.VITE_DB_USER || "root",
   password: import.meta.env.VITE_DB_PASSWORD || "",
-  database: import.meta.env.VITE_DB_NAME || "car_rental_system"
+  database: import.meta.env.VITE_DB_NAME || "car_rental_system",
+  port: import.meta.env.VITE_DB_PORT || 3306
 };
 
 // This is a simplified connection utility - in a real app, use a proper ORM or query builder
 export const createDatabaseConnection = async () => {
   try {
-    console.log("Attempting to connect to database...");
+    console.log("Attempting to connect to database with config:", {
+      host: DB_CONFIG.host,
+      user: DB_CONFIG.user,
+      database: DB_CONFIG.database,
+      port: DB_CONFIG.port
+    });
+    
     // In a real implementation, this would use a MySQL client library
     // For demonstration purposes, this just simulates a connection
     
@@ -21,17 +28,18 @@ export const createDatabaseConnection = async () => {
     return true;
   } catch (error) {
     console.error("Database connection error:", error);
-    toast.error("Erro ao conectar com o banco de dados");
+    toast.error("Erro ao conectar com o banco de dados. Verifique as configurações.");
     return false;
   }
 };
 
-// MySQL connection parameters for PHP
+// MySQL connection parameters - these should match your actual database setup
 export const PHP_DB_CONFIG = {
-  servername: "localhost",
-  username: "root",
-  password: "",
-  dbname: "car_rental_system"
+  servername: import.meta.env.VITE_DB_HOST || "localhost",
+  username: import.meta.env.VITE_DB_USER || "root",
+  password: import.meta.env.VITE_DB_PASSWORD || "",
+  dbname: import.meta.env.VITE_DB_NAME || "car_rental_system",
+  port: import.meta.env.VITE_DB_PORT || 3306
 };
 
 /**
@@ -40,7 +48,11 @@ export const PHP_DB_CONFIG = {
  */
 export const executeQuery = async (query: string, params: any[] = []): Promise<any> => {
   try {
-    console.log(`Executing query: ${query}`);
+    console.log(`Executing query with database config:`, {
+      host: DB_CONFIG.host,
+      database: DB_CONFIG.database
+    });
+    console.log(`Query: ${query}`);
     console.log(`With parameters: ${JSON.stringify(params)}`);
     
     // In a real implementation, this would execute the query against a MySQL database
@@ -55,49 +67,24 @@ export const executeQuery = async (query: string, params: any[] = []): Promise<a
   }
 };
 
-// Example usage:
-/*
-// Create a user
-await executeQuery(
-  "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-  ["New User", "user@example.com", "hashedpassword", "USER"]
-);
-
-// Get users
-const users = await executeQuery("SELECT * FROM users WHERE role = ?", ["ADMIN"]);
-*/
-
-// For PHP implementation, you would use PDO or mysqli
-// Example PHP connection and query code:
-/*
-<?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "car_rental_system";
+// Example PHP connection string (for reference in PHP implementations)
+export const getPHPConnectionString = () => {
+  return `<?php
+$servername = "${PHP_DB_CONFIG.servername}";
+$username = "${PHP_DB_CONFIG.username}";
+$password = "${PHP_DB_CONFIG.password}";
+$dbname = "${PHP_DB_CONFIG.dbname}";
+$port = ${PHP_DB_CONFIG.port};
 
 // Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
+$conn = new mysqli($servername, $username, $password, $dbname, $port);
 
 // Check connection
 if ($conn->connect_error) {
   die("Connection failed: " . $conn->connect_error);
 }
 
-// Execute query
-$sql = "SELECT id, name, email FROM users";
-$result = $conn->query($sql);
-
-// Process results
-if ($result->num_rows > 0) {
-  while($row = $result->fetch_assoc()) {
-    echo "id: " . $row["id"]. " - Name: " . $row["name"]. " - Email: " . $row["email"]. "<br>";
-  }
-} else {
-  echo "0 results";
-}
-
-// Close connection
-$conn->close();
-?>
-*/
+// Connection successful
+echo "Connected successfully";
+?>`;
+};
