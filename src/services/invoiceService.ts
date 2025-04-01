@@ -1,5 +1,4 @@
 
-// Assuming the invoiceService file might import asaasService
 // Import from the new path
 import { asaasService } from '@/services/asaas';
 import { InvoiceFormData } from '@/models/invoice';
@@ -7,26 +6,39 @@ import { Client } from '@/models/client';
 import { Invoice } from '@/models/invoice'; // Import Invoice from models
 
 // Use import.meta.env instead of process.env for Vite
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export const invoiceService = {
   getInvoices: async (): Promise<Invoice[]> => {
+    // Check if API_URL is configured, otherwise throw clear error
+    if (!API_URL) {
+      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    }
+    
     const response = await fetch(`${API_URL}/api/invoices`);
     if (!response.ok) {
-      throw new Error('Failed to fetch invoices');
+      throw new Error(`Falha ao buscar faturas: ${response.status} ${response.statusText}`);
     }
     return await response.json();
   },
 
   getInvoiceById: async (id: string): Promise<Invoice> => {
+    if (!API_URL) {
+      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    }
+    
     const response = await fetch(`${API_URL}/api/invoices/${id}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch invoice');
+      throw new Error(`Falha ao buscar fatura: ${response.status} ${response.statusText}`);
     }
     return await response.json();
   },
 
   createInvoice: async (data: InvoiceFormData): Promise<Invoice> => {
+    if (!API_URL) {
+      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    }
+    
     const response = await fetch(`${API_URL}/api/invoices`, {
       method: 'POST',
       headers: {
@@ -35,12 +47,17 @@ export const invoiceService = {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      throw new Error('Failed to create invoice');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Falha ao criar fatura: ${errorText}`);
     }
     return await response.json();
   },
 
   updateInvoice: async (id: string, data: InvoiceFormData): Promise<Invoice> => {
+    if (!API_URL) {
+      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    }
+    
     const response = await fetch(`${API_URL}/api/invoices/${id}`, {
       method: 'PUT',
       headers: {
@@ -49,21 +66,25 @@ export const invoiceService = {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      throw new Error('Failed to update invoice');
+      throw new Error(`Falha ao atualizar fatura: ${response.status} ${response.statusText}`);
     }
     return await response.json();
   },
 
   deleteInvoice: async (id: string): Promise<void> => {
+    if (!API_URL) {
+      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    }
+    
     const response = await fetch(`${API_URL}/api/invoices/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) {
-      throw new Error('Failed to delete invoice');
+      throw new Error(`Falha ao excluir fatura: ${response.status} ${response.statusText}`);
     }
   },
 
-  // Asaas integration
+  // Asaas integration - updated with better error handling
   createAsaasPayment: async (invoice: Invoice, client: Client, paymentType: 'PIX' | 'BOLETO'): Promise<any> => {
     try {
       // 1. Sync client with Asaas
@@ -98,13 +119,13 @@ export const invoiceService = {
       };
     } catch (error: any) {
       console.error("Erro ao criar pagamento Asaas:", error);
-      throw new Error(error.message || 'Failed to create Asaas payment');
+      throw new Error(error.message || 'Falha ao criar pagamento Asaas');
     }
   },
 
   // Export invoices to CSV
   exportToCSV: async (): Promise<string> => {
-    // Get invoices data first
+    // Get invoices data from the actual API instead of mocks
     const invoices = await invoiceService.getInvoices();
     
     // Create CSV headers

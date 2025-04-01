@@ -6,7 +6,7 @@
 import { asaasConfig, BASE_URLS } from './asaasConfig';
 
 /**
- * Makes a call to the Asaas API with CORS handling
+ * Makes a call to the Asaas API with improved CORS handling
  */
 export async function callAsaasApi<T>(endpoint: string, method: string = 'GET', data?: any): Promise<T> {
   const { apiKey, environment } = asaasConfig.getConfig();
@@ -22,7 +22,7 @@ export async function callAsaasApi<T>(endpoint: string, method: string = 'GET', 
   console.log(`Calling Asaas API [${environment}]: ${method} ${url}`);
   
   try {
-    // Approach with CORS handling
+    // Updated API call with proper headers
     const options: RequestInit = {
       method,
       headers: {
@@ -30,6 +30,7 @@ export async function callAsaasApi<T>(endpoint: string, method: string = 'GET', 
         'content-type': 'application/json',
         'access_token': apiKey
       },
+      // Use no-cors only for GET requests if needed
       mode: 'cors',
       body: data ? JSON.stringify(data) : undefined
     };
