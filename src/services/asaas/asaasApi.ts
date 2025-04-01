@@ -22,7 +22,7 @@ export async function callAsaasApi<T>(endpoint: string, method: string = 'GET', 
   console.log(`Calling Asaas API [${environment}]: ${method} ${url}`);
   
   try {
-    // Updated API call with proper headers
+    // Try direct API call first
     const options: RequestInit = {
       method,
       headers: {
@@ -30,12 +30,23 @@ export async function callAsaasApi<T>(endpoint: string, method: string = 'GET', 
         'content-type': 'application/json',
         'access_token': apiKey
       },
-      // Use no-cors only for GET requests if needed
-      mode: 'cors',
+      mode: 'cors', // Always try CORS first
+      credentials: 'omit', // Don't send cookies
       body: data ? JSON.stringify(data) : undefined
     };
     
-    const response = await fetch(url, options);
+    // Use a proxy endpoint if available
+    const useProxy = import.meta.env.VITE_USE_PROXY === 'true';
+    const proxyUrl = import.meta.env.VITE_PROXY_URL;
+    
+    // If proxy is configured, use it to bypass CORS
+    let finalUrl = url;
+    if (useProxy && proxyUrl) {
+      finalUrl = `${proxyUrl}?url=${encodeURIComponent(url)}`;
+      console.log(`Using proxy: ${finalUrl}`);
+    }
+    
+    const response = await fetch(finalUrl, options);
     
     // Log response for debugging
     console.log(`Asaas API response status: ${response.status}`);
@@ -57,10 +68,10 @@ export async function callAsaasApi<T>(endpoint: string, method: string = 'GET', 
   } catch (error) {
     console.error('Erro na chamada à API Asaas:', error);
     
-    // Specific error handling
+    // More specific error handling
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
       console.error('Possível erro de CORS ou conexão');
-      throw new Error('Erro de conexão com a API Asaas. Possível problema de CORS. Verifique se o token está correto e se a API está acessível.');
+      throw new Error('Erro de conexão com a API Asaas. Possível problema de CORS. Verifique se o token está correto e se a API está acessível. Se o problema persistir, configure um proxy ou uma API intermediária para fazer as chamadas.');
     } else if (error instanceof Error && error.message.includes('NetworkError')) {
       throw new Error('Erro de rede ao conectar à API Asaas. Verifique sua conexão de internet.');
     }
