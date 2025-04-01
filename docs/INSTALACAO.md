@@ -129,9 +129,9 @@ VITE_ASAAS_API_KEY=sua_chave_api_asaas
 VITE_ASAAS_ENVIRONMENT=sandbox # ou production
 ```
 
-## 3. Configuração do Apache
+## 3. Configuração do Servidor Web
 
-### Criar Virtual Host
+### Criar Virtual Host para o Frontend
 
 ```bash
 sudo nano /etc/apache2/sites-available/faturamento.conf
@@ -151,18 +151,18 @@ Adicione a seguinte configuração:
         Require all granted
     </Directory>
 
-    # API Endpoint
-    Alias /api /var/www/faturamento/api
-    <Directory /var/www/faturamento/api>
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-        
-        # Habilitar CORS se necessário
-        Header set Access-Control-Allow-Origin "*"
-        Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-    </Directory>
+    # Se você precisar implementar uma API em PHP separadamente:
+    # Alias /api /var/www/faturamento/api
+    # <Directory /var/www/faturamento/api>
+    #     Options -Indexes +FollowSymLinks
+    #     AllowOverride All
+    #     Require all granted
+    #     
+    #     # Habilitar CORS
+    #     Header set Access-Control-Allow-Origin "*"
+    #     Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    #     Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    # </Directory>
 
     ErrorLog ${APACHE_LOG_DIR}/faturamento_error.log
     CustomLog ${APACHE_LOG_DIR}/faturamento_access.log combined
@@ -178,7 +178,17 @@ sudo a2ensite faturamento.conf
 sudo systemctl restart apache2
 ```
 
-## 4. Configuração da API
+## 4. Implementação de Backend API (Opcional)
+
+Se for necessário implementar uma API backend separada, siga estas etapas:
+
+### Criar Estrutura de Diretórios da API
+
+```bash
+sudo mkdir -p /var/www/faturamento/api/config
+sudo mkdir -p /var/www/faturamento/api/controllers
+sudo mkdir -p /var/www/faturamento/api/models
+```
 
 ### Configurar Conexão com o Banco de Dados
 
@@ -186,7 +196,7 @@ sudo systemctl restart apache2
 sudo nano /var/www/faturamento/api/config/database.php
 ```
 
-Atualize as credenciais do banco de dados:
+Adicione o seguinte conteúdo:
 
 ```php
 <?php
@@ -197,6 +207,181 @@ return [
     'password' => 'sua_senha_forte',
     'charset' => 'utf8mb4',
 ];
+
+// Função para criar conexão PDO
+function getConnection() {
+    $config = include __DIR__ . '/database.php';
+    try {
+        $dsn = "mysql:host={$config['host']};dbname={$config['database']};charset={$config['charset']}";
+        $pdo = new PDO($dsn, $config['username'], $config['password'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]);
+        return $pdo;
+    } catch (PDOException $e) {
+        die("Erro de conexão: " . $e->getMessage());
+    }
+}
+?>
+```
+
+### Criar Arquivo .htaccess para API
+
+```bash
+sudo nano /var/www/faturamento/api/.htaccess
+```
+
+Adicione o seguinte conteúdo para configurar o roteamento da API:
+
+```apache
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Habilitar CORS
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+```
+
+### Criar Ponto de Entrada da API
+
+```bash
+sudo nano /var/www/faturamento/api/index.php
+```
+
+Adicione um código inicial para a API:
+
+```php
+<?php
+header('Content-Type: application/json');
+
+// Definir constantes
+define('ROOT_DIR', __DIR__);
+
+// Permitir CORS para todas as requisições
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Importar configuração do banco de dados
+require_once ROOT_DIR . '/config/database.php';
+
+// Obter a URL requisitada
+$request_uri = $_SERVER['REQUEST_URI'];
+$base_path = '/api'; // Ajuste conforme necessário
+$path = substr($request_uri, strlen($base_path));
+$path = trim($path, '/');
+$parts = explode('/', $path);
+$resource = $parts[0] ?? '';
+
+// Roteamento simples
+switch ($resource) {
+    case 'invoices':
+        require_once ROOT_DIR . '/controllers/invoices.php';
+        break;
+    case 'clients':
+        require_once ROOT_DIR . '/controllers/clients.php';
+        break;
+    default:
+        http_response_code(404);
+        echo json_encode(['error' => 'Recurso não encontrado']);
+        break;
+}
+?>
+```
+
+### Exemplo de Controlador de Faturas
+
+```bash
+sudo mkdir -p /var/www/faturamento/api/controllers
+sudo nano /var/www/faturamento/api/controllers/invoices.php
+```
+
+Adicione um exemplo de controlador:
+
+```php
+<?php
+// Obter o método HTTP
+$method = $_SERVER['REQUEST_METHOD'];
+$pdo = getConnection();
+
+// ID do recurso (se fornecido)
+$id = $parts[1] ?? null;
+
+switch ($method) {
+    case 'GET':
+        if ($id) {
+            // Obter fatura específica
+            $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
+            $stmt->execute([$id]);
+            $invoice = $stmt->fetch();
+            
+            if ($invoice) {
+                echo json_encode($invoice);
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Fatura não encontrada']);
+            }
+        } else {
+            // Listar todas as faturas
+            $stmt = $pdo->query("SELECT * FROM invoices ORDER BY issue_date DESC");
+            $invoices = $stmt->fetchAll();
+            echo json_encode($invoices);
+        }
+        break;
+        
+    case 'POST':
+        // Criar nova fatura
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Validar dados
+        if (!isset($data['invoice_number']) || !isset($data['amount'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Dados incompletos']);
+            break;
+        }
+        
+        try {
+            $stmt = $pdo->prepare("INSERT INTO invoices 
+                (invoice_number, contract_id, issue_date, due_date, amount, tax_amount, status, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                
+            $stmt->execute([
+                $data['invoice_number'],
+                $data['contract_id'] ?? null,
+                $data['issue_date'] ?? date('Y-m-d'),
+                $data['due_date'] ?? null,
+                $data['amount'],
+                $data['tax_amount'] ?? 0,
+                $data['status'] ?? 'PENDING',
+                $data['notes'] ?? null
+            ]);
+            
+            $newId = $pdo->lastInsertId();
+            $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
+            $stmt->execute([$newId]);
+            $invoice = $stmt->fetch();
+            
+            http_response_code(201);
+            echo json_encode($invoice);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao criar fatura: ' . $e->getMessage()]);
+        }
+        break;
+        
+    // Adicione casos para PUT e DELETE conforme necessário
+        
+    default:
+        http_response_code(405);
+        echo json_encode(['error' => 'Método não permitido']);
+        break;
+}
+?>
 ```
 
 ## 5. Segurança
@@ -244,11 +429,31 @@ Reinicie o Apache:
 sudo systemctl restart apache2
 ```
 
-## 6. Verificação e Manutenção
+## 6. Configuração dos Apontamentos no Frontend
+
+Para o frontend se comunicar com a API backend, é importante definir corretamente as variáveis de ambiente. Edite o arquivo `.env`:
+
+```bash
+sudo nano /var/www/faturamento/.env
+```
+
+Atualize as variáveis conforme necessário:
+
+```
+VITE_API_URL=https://seu-dominio.com/api
+```
+
+Reconstrua o frontend após qualquer alteração nas variáveis de ambiente:
+
+```bash
+sudo npm run build
+```
+
+## 7. Verificação e Manutenção
 
 ### Verificar a Instalação
 
-Acesse http://seu-dominio.com ou https://seu-dominio.com no navegador para verificar se o sistema está funcionando corretamente.
+Acesse https://seu-dominio.com no navegador para verificar se o sistema está funcionando corretamente.
 
 ### Configurar Backup Automático
 
@@ -297,7 +502,7 @@ Adicione:
 0 2 * * * /usr/local/bin/backup-faturamento.sh
 ```
 
-## 7. Manutenção e Atualização
+## 8. Manutenção e Atualização
 
 ### Atualizar o Sistema
 
@@ -311,7 +516,7 @@ sudo npm run build
 sudo chown -R www-data:www-data /var/www/faturamento
 ```
 
-## 8. Solução de Problemas
+## 9. Solução de Problemas
 
 ### Verificar Logs do Apache
 
@@ -338,7 +543,7 @@ sudo systemctl restart apache2
 sudo systemctl restart mysql
 ```
 
-## 9. Contato de Suporte
+## 10. Contato de Suporte
 
 Para mais informações ou suporte, entre em contato com:
 - Email: suporte@seudominio.com
