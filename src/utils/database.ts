@@ -8,10 +8,10 @@ const DB_CONFIG = {
   user: import.meta.env.VITE_DB_USER || "root",
   password: import.meta.env.VITE_DB_PASSWORD || "",
   database: import.meta.env.VITE_DB_NAME || "car_rental_system",
-  port: import.meta.env.VITE_DB_PORT || 3306
+  port: parseInt(import.meta.env.VITE_DB_PORT || "3306")
 };
 
-// This is a simplified connection utility - in a real app, use a proper ORM or query builder
+// This is a connector for the PHP backend
 export const createDatabaseConnection = async () => {
   try {
     console.log("Tentando conectar ao banco de dados com a configuração:", {
@@ -28,19 +28,36 @@ export const createDatabaseConnection = async () => {
       return false;
     }
     
-    // In a real implementation, this would use a MySQL client library
-    // For demonstration purposes, this just simulates a connection
+    // Check API connection to the backend
+    const API_URL = import.meta.env.VITE_API_URL || '';
     
-    // Check if we can connect to a database - this is a simulation
-    // In a real app, this would be an actual connection attempt
-    const isConnected = DB_CONFIG.host && DB_CONFIG.user && DB_CONFIG.database;
+    if (!API_URL) {
+      console.error("API URL não configurada");
+      toast.error("API URL não configurada. Configure a variável VITE_API_URL no arquivo .env");
+      return false;
+    }
     
-    if (isConnected) {
+    // Test connection to backend
+    try {
+      const response = await fetch(`${API_URL}/api/test-connection.php`);
+      if (!response.ok) {
+        console.error("Falha na conexão com a API:", response.status, response.statusText);
+        toast.error("Falha na conexão com a API. Verifique se o backend está rodando corretamente.");
+        return false;
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        console.error("Erro de conexão reportado pelo backend:", data.message);
+        toast.error(`Erro de conexão com o banco de dados: ${data.message}`);
+        return false;
+      }
+      
       console.log("Conectado ao banco de dados com sucesso");
       return true;
-    } else {
-      console.error("Falha na conexão com o banco de dados: configuração inválida");
-      toast.error("Falha na conexão com o banco de dados. Verifique as configurações.");
+    } catch (error) {
+      console.error("Erro ao conectar com a API:", error);
+      toast.error("Não foi possível conectar ao backend. Verifique se o servidor está rodando.");
       return false;
     }
   } catch (error) {
@@ -56,12 +73,12 @@ export const PHP_DB_CONFIG = {
   username: import.meta.env.VITE_DB_USER || "root",
   password: import.meta.env.VITE_DB_PASSWORD || "",
   dbname: import.meta.env.VITE_DB_NAME || "car_rental_system",
-  port: import.meta.env.VITE_DB_PORT || 3306
+  port: parseInt(import.meta.env.VITE_DB_PORT || "3306")
 };
 
 /**
  * Execução de consultas no banco de dados
- * Em uma implementação real, isso usaria o pacote mysql2/promise
+ * Apenas para testes locais - em produção, todas as consultas devem ser feitas via API PHP
  */
 export const executeQuery = async (query: string, params: any[] = []): Promise<any> => {
   try {
@@ -72,92 +89,35 @@ export const executeQuery = async (query: string, params: any[] = []): Promise<a
     console.log(`Consulta: ${query}`);
     console.log(`Com parâmetros: ${JSON.stringify(params)}`);
     
-    // Validar a conexão antes de executar a consulta
-    const isConnected = await createDatabaseConnection();
-    if (!isConnected) {
-      throw new Error("Não foi possível estabelecer conexão com o banco de dados");
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    
+    if (!API_URL) {
+      toast.error("API URL não configurada. Configure a variável VITE_API_URL no arquivo .env");
+      throw new Error("API URL não configurada");
     }
     
-    // Verificar se a consulta é válida
-    if (!query) {
-      throw new Error("Consulta SQL inválida");
+    // Execute a consulta através da API PHP
+    const response = await fetch(`${API_URL}/api/execute-query.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        params
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`Erro da API: ${response.status} ${response.statusText}`, errorText);
+      throw new Error(`Erro ao executar consulta: ${response.status} ${response.statusText}`);
     }
     
-    // Em uma implementação real, isso executaria a consulta no banco MySQL
-    // Para fins de demonstração, apenas simulamos o resultado
+    const data = await response.json();
+    console.log("Resultado da consulta:", data);
     
-    // Simulando uma inserção ou atualização bem-sucedida
-    if (query.toLowerCase().includes('insert') || query.toLowerCase().includes('update') || query.toLowerCase().includes('delete')) {
-      console.log("Consulta de modificação executada com sucesso");
-      return { success: true, affectedRows: 1, insertId: Math.floor(Math.random() * 1000) };
-    }
-    
-    // Simulando uma consulta de seleção
-    if (query.toLowerCase().includes('select')) {
-      console.log("Consulta de seleção executada com sucesso");
-      
-      // Se estivermos buscando uma fatura específica por ID
-      if (query.toLowerCase().includes('where id =')) {
-        const id = params[0] || 'ID-001';
-        return { 
-          success: true, 
-          data: [{
-            id,
-            invoice_number: `INV-${id}`,
-            contract_id: 'CONT-001',
-            issue_date: new Date(),
-            due_date: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
-            amount: 1000,
-            tax_amount: 100,
-            total_amount: 1100,
-            status: 'pending',
-            client: {
-              id: 'CLI-001',
-              name: 'Cliente Exemplo',
-              email: 'cliente@exemplo.com',
-              phone: '(11) 99999-9999'
-            },
-            items: [],
-            subtotal: 1000,
-            discount: 0,
-            created_at: new Date(),
-            updated_at: new Date()
-          }]
-        };
-      }
-      
-      // Para todas as outras consultas SELECT
-      return { 
-        success: true, 
-        data: [
-          {
-            id: 'ID-001',
-            invoice_number: 'INV-001',
-            contract_id: 'CONT-001',
-            issue_date: new Date(),
-            due_date: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
-            amount: 1000,
-            tax_amount: 100,
-            total_amount: 1100,
-            status: 'pending',
-            client: {
-              id: 'CLI-001',
-              name: 'Cliente Exemplo',
-              email: 'cliente@exemplo.com',
-              phone: '(11) 99999-9999'
-            },
-            items: [],
-            subtotal: 1000,
-            discount: 0,
-            created_at: new Date(),
-            updated_at: new Date()
-          }
-        ]
-      };
-    }
-    
-    console.log("Consulta executada com sucesso");
-    return { success: true, data: [] };
+    return data;
   } catch (error) {
     console.error("Erro na consulta ao banco de dados:", error);
     toast.error("Erro ao executar consulta no banco de dados");

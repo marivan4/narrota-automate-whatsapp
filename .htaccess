@@ -6,7 +6,7 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Redirect all requests to index.html
+# Redirect all requests to index.html for SPA routing
 RewriteRule ^ index.html [QSA,L]
 
 # Set security headers
@@ -18,20 +18,7 @@ RewriteRule ^ index.html [QSA,L]
 
 # Allow cross-origin requests for API integration
 <IfModule mod_headers.c>
-  # Allow requests from any origin (you can restrict to specific domains if needed)
-  Header set Access-Control-Allow-Origin "*"
-  Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-  Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, access_token"
-  Header set Access-Control-Allow-Credentials "true"
-  
-  # Handle preflight OPTIONS requests
-  RewriteEngine On
-  RewriteCond %{REQUEST_METHOD} OPTIONS
-  RewriteRule ^(.*)$ $1 [R=200,L]
-</IfModule>
-
-# Enable CORS for specific API endpoints if needed
-<IfModule mod_headers.c>
+  # API endpoints should handle CORS
   <FilesMatch "^api/">
     Header set Access-Control-Allow-Origin "*"
     Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
@@ -39,3 +26,8 @@ RewriteRule ^ index.html [QSA,L]
     Header set Access-Control-Allow-Credentials "true"
   </FilesMatch>
 </IfModule>
+
+# Handle OPTIONS requests for CORS preflight
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
