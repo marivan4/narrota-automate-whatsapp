@@ -1,3 +1,4 @@
+
 // Import from the new path
 import { asaasService } from '@/services/asaas';
 import { InvoiceFormData } from '@/models/invoice';
@@ -131,10 +132,14 @@ export const invoiceService = {
           console.log("Resultado da inserção no banco de dados:", result);
           
           if (result && result.success) {
-            // Return the created invoice
+            // Convert string dates back to Date objects for the returned Invoice
             return {
-              id: 'temp-id', // This would be the actual ID in a real implementation
-              ...formattedData,
+              id: result.insertId || 'temp-id',
+              ...data,
+              issue_date: data.issue_date instanceof Date ? data.issue_date : new Date(data.issue_date),
+              due_date: data.due_date instanceof Date ? data.due_date : new Date(data.due_date),
+              payment_date: data.payment_date instanceof Date ? data.payment_date : 
+                           (data.payment_date ? new Date(data.payment_date) : undefined),
               total_amount: formattedData.total_amount,
               client: { id: formattedData.client_id || '', name: '', email: '', phone: '' },
               items: [],
@@ -228,10 +233,14 @@ export const invoiceService = {
           console.log("Resultado da atualização no banco de dados:", result);
           
           if (result && result.success) {
-            // Return the updated invoice
+            // Convert string dates back to Date objects for the returned Invoice
             return {
               id,
-              ...formattedData,
+              ...data,
+              issue_date: data.issue_date instanceof Date ? data.issue_date : new Date(data.issue_date),
+              due_date: data.due_date instanceof Date ? data.due_date : new Date(data.due_date),
+              payment_date: data.payment_date instanceof Date ? data.payment_date : 
+                           (data.payment_date ? new Date(data.payment_date) : undefined),
               total_amount: formattedData.total_amount,
               client: { id: formattedData.client_id || '', name: '', email: '', phone: '' },
               items: [],
