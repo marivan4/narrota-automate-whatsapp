@@ -11,95 +11,304 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 
 export const invoiceService = {
   getInvoices: async (): Promise<Invoice[]> => {
-    // Check if API_URL is configured, otherwise throw clear error
-    if (!API_URL) {
-      console.log("API URL not configured, checking database connection");
-      try {
-        // Try database connection directly if API_URL is not available
-        const queryResult = await executeQuery("SELECT * FROM invoices ORDER BY due_date DESC");
-        if (queryResult && queryResult.data) {
-          return queryResult.data;
-        }
-        throw new Error('Não foi possível obter dados de faturas do banco de dados');
-      } catch (dbError) {
-        console.error("Database error:", dbError);
-        toast.error("Erro ao buscar faturas do banco de dados");
-        throw new Error(`Configuração de API/Banco de dados incorreta. Configure a variável de ambiente VITE_API_URL ou verifique a conexão com o banco de dados.`);
-      }
-    }
-    
     try {
+      console.log("Buscando faturas, API_URL configurada:", API_URL ? "Sim" : "Não");
+      
+      // Check if API_URL is configured, otherwise try database connection
+      if (!API_URL) {
+        console.log("API URL not configured, checking database connection");
+        try {
+          // Try database connection directly if API_URL is not available
+          const queryResult = await executeQuery("SELECT * FROM invoices ORDER BY due_date DESC");
+          console.log("Resultado da consulta ao banco de dados:", queryResult);
+          if (queryResult && queryResult.data) {
+            return queryResult.data;
+          }
+          throw new Error('Não foi possível obter dados de faturas do banco de dados');
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          toast.error("Erro ao buscar faturas do banco de dados");
+          throw new Error(`Configuração de API/Banco de dados incorreta. Configure a variável de ambiente VITE_API_URL ou verifique a conexão com o banco de dados.`);
+        }
+      }
+      
+      // If API_URL is configured, try to fetch from API
       const response = await fetch(`${API_URL}/api/invoices`);
       if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`API Error: ${response.status} ${response.statusText}`, errorText);
         throw new Error(`Falha ao buscar faturas: ${response.status} ${response.statusText}`);
       }
       return await response.json();
     } catch (error) {
-      console.error("API Error:", error);
-      toast.error("Erro ao buscar faturas da API");
+      console.error("Error fetching invoices:", error);
+      toast.error("Erro ao buscar faturas");
       throw error;
     }
   },
 
   getInvoiceById: async (id: string): Promise<Invoice> => {
-    if (!API_URL) {
-      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    try {
+      console.log(`Buscando fatura com ID: ${id}`);
+      
+      if (!API_URL) {
+        console.log("API URL not configured, checking database connection");
+        try {
+          // Try database connection directly if API_URL is not available
+          const queryResult = await executeQuery("SELECT * FROM invoices WHERE id = ?", [id]);
+          console.log("Resultado da consulta ao banco de dados:", queryResult);
+          if (queryResult && queryResult.data && queryResult.data[0]) {
+            return queryResult.data[0];
+          }
+          throw new Error('Fatura não encontrada no banco de dados');
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          toast.error("Erro ao buscar fatura do banco de dados");
+          throw new Error(`Configuração de API/Banco de dados incorreta. Configure a variável de ambiente VITE_API_URL ou verifique a conexão com o banco de dados.`);
+        }
+      }
+      
+      // If API_URL is configured, try to fetch from API
+      const response = await fetch(`${API_URL}/api/invoices/${id}`);
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`API Error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Falha ao buscar fatura: ${response.status} ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      toast.error("Erro ao buscar fatura");
+      throw error;
     }
-    
-    const response = await fetch(`${API_URL}/api/invoices/${id}`);
-    if (!response.ok) {
-      throw new Error(`Falha ao buscar fatura: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
   },
 
   createInvoice: async (data: InvoiceFormData): Promise<Invoice> => {
-    if (!API_URL) {
-      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    try {
+      console.log("Criando fatura com dados:", data);
+      
+      if (!API_URL) {
+        console.log("API URL not configured, checking database connection");
+        try {
+          // Validate required fields
+          if (!data.invoice_number || !data.contract_id || !data.amount) {
+            throw new Error('Campos obrigatórios não preenchidos');
+          }
+          
+          // Format dates for database
+          const formattedData = {
+            ...data,
+            issue_date: data.issue_date instanceof Date ? data.issue_date.toISOString().split('T')[0] : data.issue_date,
+            due_date: data.due_date instanceof Date ? data.due_date.toISOString().split('T')[0] : data.due_date,
+            payment_date: data.payment_date instanceof Date ? data.payment_date.toISOString().split('T')[0] : data.payment_date,
+            amount: Number(data.amount),
+            tax_amount: Number(data.tax_amount || 0),
+            total_amount: Number(data.amount) + Number(data.tax_amount || 0)
+          };
+          
+          console.log("Dados formatados para inserção no banco:", formattedData);
+          
+          // Execute insert query
+          const result = await executeQuery(
+            `INSERT INTO invoices (invoice_number, contract_id, issue_date, due_date, amount, tax_amount, 
+            total_amount, status, payment_method, notes, client_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              formattedData.invoice_number,
+              formattedData.contract_id,
+              formattedData.issue_date,
+              formattedData.due_date,
+              formattedData.amount,
+              formattedData.tax_amount,
+              formattedData.total_amount,
+              formattedData.status,
+              formattedData.payment_method || null,
+              formattedData.notes || null,
+              formattedData.client_id || null
+            ]
+          );
+          
+          console.log("Resultado da inserção no banco de dados:", result);
+          
+          if (result && result.success) {
+            // Return the created invoice
+            return {
+              id: 'temp-id', // This would be the actual ID in a real implementation
+              ...formattedData,
+              total_amount: formattedData.total_amount,
+              client: { id: formattedData.client_id || '', name: '', email: '', phone: '' },
+              items: [],
+              subtotal: formattedData.amount,
+              discount: 0,
+              created_at: new Date(),
+              updated_at: new Date()
+            };
+          }
+          throw new Error('Falha ao inserir fatura no banco de dados');
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          toast.error("Erro ao criar fatura no banco de dados: " + (dbError instanceof Error ? dbError.message : String(dbError)));
+          throw dbError;
+        }
+      }
+      
+      // If API_URL is configured, try to create using API
+      console.log(`Enviando dados para API: ${API_URL}/api/invoices`);
+      const response = await fetch(`${API_URL}/api/invoices`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`API Error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Falha ao criar fatura: ${errorText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      toast.error("Erro ao criar fatura: " + (error instanceof Error ? error.message : String(error)));
+      throw error;
     }
-    
-    const response = await fetch(`${API_URL}/api/invoices`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      throw new Error(`Falha ao criar fatura: ${errorText}`);
-    }
-    return await response.json();
   },
 
   updateInvoice: async (id: string, data: InvoiceFormData): Promise<Invoice> => {
-    if (!API_URL) {
-      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
+    try {
+      console.log(`Atualizando fatura ${id} com dados:`, data);
+      
+      if (!API_URL) {
+        console.log("API URL not configured, checking database connection");
+        try {
+          // Format dates for database
+          const formattedData = {
+            ...data,
+            issue_date: data.issue_date instanceof Date ? data.issue_date.toISOString().split('T')[0] : data.issue_date,
+            due_date: data.due_date instanceof Date ? data.due_date.toISOString().split('T')[0] : data.due_date,
+            payment_date: data.payment_date instanceof Date ? data.payment_date.toISOString().split('T')[0] : data.payment_date,
+            amount: Number(data.amount),
+            tax_amount: Number(data.tax_amount || 0),
+            total_amount: Number(data.amount) + Number(data.tax_amount || 0)
+          };
+          
+          console.log("Dados formatados para atualização no banco:", formattedData);
+          
+          // Execute update query
+          const result = await executeQuery(
+            `UPDATE invoices SET 
+            invoice_number = ?, 
+            contract_id = ?, 
+            issue_date = ?, 
+            due_date = ?, 
+            amount = ?, 
+            tax_amount = ?, 
+            total_amount = ?, 
+            status = ?, 
+            payment_method = ?, 
+            notes = ? 
+            WHERE id = ?`,
+            [
+              formattedData.invoice_number,
+              formattedData.contract_id,
+              formattedData.issue_date,
+              formattedData.due_date,
+              formattedData.amount,
+              formattedData.tax_amount,
+              formattedData.total_amount,
+              formattedData.status,
+              formattedData.payment_method || null,
+              formattedData.notes || null,
+              id
+            ]
+          );
+          
+          console.log("Resultado da atualização no banco de dados:", result);
+          
+          if (result && result.success) {
+            // Return the updated invoice
+            return {
+              id,
+              ...formattedData,
+              total_amount: formattedData.total_amount,
+              client: { id: formattedData.client_id || '', name: '', email: '', phone: '' },
+              items: [],
+              subtotal: formattedData.amount,
+              discount: 0,
+              created_at: new Date(),
+              updated_at: new Date()
+            };
+          }
+          throw new Error('Falha ao atualizar fatura no banco de dados');
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          toast.error("Erro ao atualizar fatura no banco de dados");
+          throw dbError;
+        }
+      }
+      
+      // If API_URL is configured, try to update using API
+      const response = await fetch(`${API_URL}/api/invoices/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`API Error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Falha ao atualizar fatura: ${response.status} ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      toast.error("Erro ao atualizar fatura");
+      throw error;
     }
-    
-    const response = await fetch(`${API_URL}/api/invoices/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error(`Falha ao atualizar fatura: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
   },
 
   deleteInvoice: async (id: string): Promise<void> => {
-    if (!API_URL) {
-      throw new Error('API URL não configurada. Configure a variável de ambiente VITE_API_URL.');
-    }
-    
-    const response = await fetch(`${API_URL}/api/invoices/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error(`Falha ao excluir fatura: ${response.status} ${response.statusText}`);
+    try {
+      console.log(`Excluindo fatura com ID: ${id}`);
+      
+      if (!API_URL) {
+        console.log("API URL not configured, checking database connection");
+        try {
+          // Execute delete query
+          const result = await executeQuery("DELETE FROM invoices WHERE id = ?", [id]);
+          
+          console.log("Resultado da exclusão no banco de dados:", result);
+          
+          if (!(result && result.success)) {
+            throw new Error('Falha ao excluir fatura do banco de dados');
+          }
+          return;
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          toast.error("Erro ao excluir fatura do banco de dados");
+          throw dbError;
+        }
+      }
+      
+      // If API_URL is configured, try to delete using API
+      const response = await fetch(`${API_URL}/api/invoices/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`API Error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Falha ao excluir fatura: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast.error("Erro ao excluir fatura");
+      throw error;
     }
   },
 
