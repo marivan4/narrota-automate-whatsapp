@@ -1,7 +1,7 @@
 
-# Manual de Instalação - Sistema de Faturamento
+# Manual de Instalação - Sistema de Faturamento e Gestão de Locação de Veículos
 
-Este documento fornece instruções para instalar o sistema em um servidor Linux Ubuntu 22.04.5 LTS com MySQL e Apache.
+Este documento fornece instruções para instalar e configurar o sistema em um servidor Linux Ubuntu 22.04.5 LTS com MySQL e Apache.
 
 ## Requisitos do Sistema
 
@@ -57,9 +57,9 @@ sudo mysql -u root -p
 No prompt do MySQL, execute:
 
 ```sql
-CREATE DATABASE faturamento;
-CREATE USER 'usuario_faturamento'@'localhost' IDENTIFIED BY 'sua_senha_forte';
-GRANT ALL PRIVILEGES ON faturamento.* TO 'usuario_faturamento'@'localhost';
+CREATE DATABASE car_rental_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'usuario_sistema'@'localhost' IDENTIFIED BY 'sua_senha_forte';
+GRANT ALL PRIVILEGES ON car_rental_system.* TO 'usuario_sistema'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -78,55 +78,76 @@ npm -v
 ### Clonar o Repositório (ou Transferir os Arquivos)
 
 ```bash
-sudo mkdir -p /var/www/faturamento
-cd /var/www/faturamento
+sudo mkdir -p /var/www/car_rental_system
+cd /var/www/car_rental_system
 
 # Se estiver usando git
 sudo git clone [URL_DO_REPOSITORIO] .
 
 # OU se estiver transferindo arquivos manualmente via SFTP/SCP
 # (Faça isso a partir da sua máquina local)
-# scp -r project_files/* usuario@servidor:/var/www/faturamento/
+# scp -r project_files/* usuario@servidor:/var/www/car_rental_system/
 ```
 
 ### Configurar Permissões
 
 ```bash
-sudo chown -R www-data:www-data /var/www/faturamento
-sudo chmod -R 755 /var/www/faturamento
+sudo chown -R www-data:www-data /var/www/car_rental_system
+sudo chmod -R 755 /var/www/car_rental_system
 ```
 
 ### Configurar o Banco de Dados
 
-Execute o script SQL para criação das tabelas:
+Execute os scripts SQL para criação das tabelas:
 
 ```bash
-sudo mysql -u usuario_faturamento -p faturamento < /var/www/faturamento/src/database/schema.sql
-sudo mysql -u usuario_faturamento -p faturamento < /var/www/faturamento/src/database/asaas_tables.sql
+sudo mysql -u usuario_sistema -p car_rental_system < /var/www/car_rental_system/src/database/schema.sql
+sudo mysql -u usuario_sistema -p car_rental_system < /var/www/car_rental_system/src/database/asaas_tables.sql
 ```
 
 ### Build do Frontend
 
 ```bash
-cd /var/www/faturamento
+cd /var/www/car_rental_system
 sudo npm install
 sudo npm run build
 ```
 
 ### Configurar Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto:
+Crie um arquivo `.env` na raiz do projeto baseado no modelo `.env.example`:
 
 ```bash
-sudo nano /var/www/faturamento/.env
+sudo cp /var/www/car_rental_system/.env.example /var/www/car_rental_system/.env
+sudo nano /var/www/car_rental_system/.env
 ```
 
-Adicione as variáveis necessárias:
+Modifique as seguintes variáveis conforme necessário:
 
 ```
+# API Configuration
 VITE_API_URL=http://seu-dominio.com/api
-VITE_ASAAS_API_KEY=sua_chave_api_asaas
-VITE_ASAAS_ENVIRONMENT=sandbox # ou production
+
+# Database Configuration
+VITE_DB_HOST=localhost
+VITE_DB_USER=usuario_sistema
+VITE_DB_PASSWORD=sua_senha_forte
+VITE_DB_NAME=car_rental_system
+VITE_DB_PORT=3306
+
+# Asaas API Integration
+# Defina como 'true' para usar um proxy para evitar problemas de CORS
+VITE_USE_PROXY=true
+VITE_PROXY_URL=/api/proxy.php
+VITE_ASAAS_API_KEY=seu_token_da_api_asaas
+VITE_ASAAS_ENVIRONMENT=sandbox
+
+# Feature Flags
+VITE_ENABLE_WHATSAPP=true
+VITE_ENABLE_ASAAS=true
+
+# Logging
+VITE_ENABLE_DEBUG_LOGS=true
 ```
 
 ## 3. Configuração do Servidor Web
@@ -134,7 +155,7 @@ VITE_ASAAS_ENVIRONMENT=sandbox # ou production
 ### Criar Virtual Host para o Frontend
 
 ```bash
-sudo nano /etc/apache2/sites-available/faturamento.conf
+sudo nano /etc/apache2/sites-available/car_rental_system.conf
 ```
 
 Adicione a seguinte configuração:
@@ -143,29 +164,29 @@ Adicione a seguinte configuração:
 <VirtualHost *:80>
     ServerName seu-dominio.com
     ServerAdmin webmaster@localhost
-    DocumentRoot /var/www/faturamento/dist
+    DocumentRoot /var/www/car_rental_system/dist
 
-    <Directory /var/www/faturamento/dist>
+    <Directory /var/www/car_rental_system/dist>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 
-    # Se você precisar implementar uma API em PHP separadamente:
-    # Alias /api /var/www/faturamento/api
-    # <Directory /var/www/faturamento/api>
-    #     Options -Indexes +FollowSymLinks
-    #     AllowOverride All
-    #     Require all granted
-    #     
-    #     # Habilitar CORS
-    #     Header set Access-Control-Allow-Origin "*"
-    #     Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    #     Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-    # </Directory>
+    # Configuração para a API PHP
+    Alias /api /var/www/car_rental_system/public/api
+    <Directory /var/www/car_rental_system/public/api>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        # Habilitar CORS
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/faturamento_error.log
-    CustomLog ${APACHE_LOG_DIR}/faturamento_access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/car_rental_system_error.log
+    CustomLog ${APACHE_LOG_DIR}/car_rental_system_access.log combined
 </VirtualHost>
 ```
 
@@ -174,214 +195,102 @@ Adicione a seguinte configuração:
 ```bash
 sudo a2enmod rewrite
 sudo a2enmod headers
-sudo a2ensite faturamento.conf
+sudo a2ensite car_rental_system.conf
 sudo systemctl restart apache2
 ```
 
-## 4. Implementação de Backend API (Opcional)
+## 4. Configuração da API Proxy para Integração com Asaas
 
-Se for necessário implementar uma API backend separada, siga estas etapas:
-
-### Criar Estrutura de Diretórios da API
+Para evitar problemas de CORS com a API Asaas, um proxy PHP é necessário. O arquivo já está incluído em `/public/api/proxy.php`, mas precisa ser configurado corretamente:
 
 ```bash
-sudo mkdir -p /var/www/faturamento/api/config
-sudo mkdir -p /var/www/faturamento/api/controllers
-sudo mkdir -p /var/www/faturamento/api/models
+sudo nano /var/www/car_rental_system/public/api/proxy.php
 ```
 
-### Configurar Conexão com o Banco de Dados
-
-```bash
-sudo nano /var/www/faturamento/api/config/database.php
-```
-
-Adicione o seguinte conteúdo:
+Verifique se o conteúdo do arquivo está correto:
 
 ```php
 <?php
-return [
-    'host' => 'localhost',
-    'database' => 'faturamento',
-    'username' => 'usuario_faturamento',
-    'password' => 'sua_senha_forte',
-    'charset' => 'utf8mb4',
-];
+// Configuração de cabeçalhos CORS
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 
-// Função para criar conexão PDO
-function getConnection() {
-    $config = include __DIR__ . '/database.php';
-    try {
-        $dsn = "mysql:host={$config['host']};dbname={$config['database']};charset={$config['charset']}";
-        $pdo = new PDO($dsn, $config['username'], $config['password'], [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
-        return $pdo;
-    } catch (PDOException $e) {
-        die("Erro de conexão: " . $e->getMessage());
-    }
-}
-?>
-```
-
-### Criar Arquivo .htaccess para API
-
-```bash
-sudo nano /var/www/faturamento/api/.htaccess
-```
-
-Adicione o seguinte conteúdo para configurar o roteamento da API:
-
-```apache
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php [QSA,L]
-
-# Habilitar CORS
-Header set Access-Control-Allow-Origin "*"
-Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-```
-
-### Criar Ponto de Entrada da API
-
-```bash
-sudo nano /var/www/faturamento/api/index.php
-```
-
-Adicione um código inicial para a API:
-
-```php
-<?php
-header('Content-Type: application/json');
-
-// Definir constantes
-define('ROOT_DIR', __DIR__);
-
-// Permitir CORS para todas as requisições
+// Responder imediatamente a requisições OPTIONS (preflight)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Importar configuração do banco de dados
-require_once ROOT_DIR . '/config/database.php';
+// Obter a URL de destino da query string
+$targetUrl = isset($_GET['url']) ? $_GET['url'] : '';
 
-// Obter a URL requisitada
-$request_uri = $_SERVER['REQUEST_URI'];
-$base_path = '/api'; // Ajuste conforme necessário
-$path = substr($request_uri, strlen($base_path));
-$path = trim($path, '/');
-$parts = explode('/', $path);
-$resource = $parts[0] ?? '';
-
-// Roteamento simples
-switch ($resource) {
-    case 'invoices':
-        require_once ROOT_DIR . '/controllers/invoices.php';
-        break;
-    case 'clients':
-        require_once ROOT_DIR . '/controllers/clients.php';
-        break;
-    default:
-        http_response_code(404);
-        echo json_encode(['error' => 'Recurso não encontrado']);
-        break;
+if (empty($targetUrl)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'URL de destino não fornecida']);
+    exit();
 }
-?>
-```
 
-### Exemplo de Controlador de Faturas
+// Obter a chave da API Asaas do cabeçalho ou da variável de ambiente
+$apiKey = '';
 
-```bash
-sudo mkdir -p /var/www/faturamento/api/controllers
-sudo nano /var/www/faturamento/api/controllers/invoices.php
-```
+if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    $apiKey = $_SERVER['HTTP_AUTHORIZATION'];
+} else if (isset($_SERVER['HTTP_X_API_KEY'])) {
+    $apiKey = $_SERVER['HTTP_X_API_KEY'];
+}
 
-Adicione um exemplo de controlador:
+// Inicializar cURL
+$ch = curl_init();
 
-```php
-<?php
-// Obter o método HTTP
+// Configurar a requisição cURL
+curl_setopt($ch, CURLOPT_URL, $targetUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+// Copiar o método da requisição
 $method = $_SERVER['REQUEST_METHOD'];
-$pdo = getConnection();
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
 
-// ID do recurso (se fornecido)
-$id = $parts[1] ?? null;
-
-switch ($method) {
-    case 'GET':
-        if ($id) {
-            // Obter fatura específica
-            $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
-            $stmt->execute([$id]);
-            $invoice = $stmt->fetch();
-            
-            if ($invoice) {
-                echo json_encode($invoice);
-            } else {
-                http_response_code(404);
-                echo json_encode(['error' => 'Fatura não encontrada']);
-            }
-        } else {
-            // Listar todas as faturas
-            $stmt = $pdo->query("SELECT * FROM invoices ORDER BY issue_date DESC");
-            $invoices = $stmt->fetchAll();
-            echo json_encode($invoices);
-        }
-        break;
-        
-    case 'POST':
-        // Criar nova fatura
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        // Validar dados
-        if (!isset($data['invoice_number']) || !isset($data['amount'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Dados incompletos']);
-            break;
-        }
-        
-        try {
-            $stmt = $pdo->prepare("INSERT INTO invoices 
-                (invoice_number, contract_id, issue_date, due_date, amount, tax_amount, status, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                
-            $stmt->execute([
-                $data['invoice_number'],
-                $data['contract_id'] ?? null,
-                $data['issue_date'] ?? date('Y-m-d'),
-                $data['due_date'] ?? null,
-                $data['amount'],
-                $data['tax_amount'] ?? 0,
-                $data['status'] ?? 'PENDING',
-                $data['notes'] ?? null
-            ]);
-            
-            $newId = $pdo->lastInsertId();
-            $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
-            $stmt->execute([$newId]);
-            $invoice = $stmt->fetch();
-            
-            http_response_code(201);
-            echo json_encode($invoice);
-        } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Erro ao criar fatura: ' . $e->getMessage()]);
-        }
-        break;
-        
-    // Adicione casos para PUT e DELETE conforme necessário
-        
-    default:
-        http_response_code(405);
-        echo json_encode(['error' => 'Método não permitido']);
-        break;
+// Adicionar headers da requisição
+$headers = ['Content-Type: application/json'];
+if (!empty($apiKey)) {
+    $headers[] = "access_token: $apiKey";
 }
-?>
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+// Para métodos POST, PUT, etc., enviar dados no corpo da requisição
+if ($method !== 'GET' && $method !== 'HEAD' && $method !== 'OPTIONS') {
+    $input = file_get_contents('php://input');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $input);
+}
+
+// Executar a requisição
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+
+// Verificar erros
+if (curl_errno($ch)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Erro cURL: ' . curl_error($ch)]);
+    curl_close($ch);
+    exit();
+}
+
+// Fechar a conexão cURL
+curl_close($ch);
+
+// Enviar a resposta com o mesmo código HTTP
+http_response_code($httpCode);
+
+// Se o content type for retornado, usá-lo
+if ($contentType) {
+    header("Content-Type: $contentType");
+}
+
+echo $response;
 ```
 
 ## 5. Segurança
@@ -431,16 +340,18 @@ sudo systemctl restart apache2
 
 ## 6. Configuração dos Apontamentos no Frontend
 
-Para o frontend se comunicar com a API backend, é importante definir corretamente as variáveis de ambiente. Edite o arquivo `.env`:
+Para o frontend se comunicar com a API backend e com a API do Asaas, é importante definir corretamente as variáveis de ambiente. Edite o arquivo `.env`:
 
 ```bash
-sudo nano /var/www/faturamento/.env
+sudo nano /var/www/car_rental_system/.env
 ```
 
 Atualize as variáveis conforme necessário:
 
 ```
 VITE_API_URL=https://seu-dominio.com/api
+VITE_USE_PROXY=true
+VITE_PROXY_URL=/api/proxy.php
 ```
 
 Reconstrua o frontend após qualquer alteração nas variáveis de ambiente:
@@ -449,7 +360,42 @@ Reconstrua o frontend após qualquer alteração nas variáveis de ambiente:
 sudo npm run build
 ```
 
-## 7. Verificação e Manutenção
+## 7. Solução de Problemas Comuns
+
+### Erro na Criação de Faturas
+
+Se você estiver recebendo o erro "Erro ao criar fatura. Verifique os dados e tente novamente", verifique:
+
+1. A conexão com o banco de dados está configurada corretamente
+2. A integração com o Asaas está funcionando (verifique a chave API)
+3. Os formatos de data estão corretos (o sistema agora lida automaticamente com a conversão entre string e objeto Date)
+4. Verifique os logs do Apache para mais detalhes:
+   ```bash
+   sudo tail -f /var/log/apache2/car_rental_system_error.log
+   ```
+
+### Problemas na Persistência de Dados
+
+Se as alterações no sistema não estiverem sendo refletidas no banco de dados:
+
+1. Verifique se o usuário do MySQL tem permissões adequadas
+2. Confira se as variáveis de ambiente do banco de dados estão configuradas corretamente no .env
+3. Verifique se não há erros de validação nos formulários
+4. Ative o modo de depuração (VITE_ENABLE_DEBUG_LOGS=true) para ver logs detalhados
+
+### Erros de CORS com a API Asaas
+
+Se estiver enfrentando problemas de CORS:
+
+1. Confirme que VITE_USE_PROXY=true está definido no .env
+2. Verifique se o proxy.php está funcionando corretamente
+3. Certifique-se de que os módulos Apache estão habilitados:
+   ```bash
+   sudo a2enmod headers
+   sudo systemctl restart apache2
+   ```
+
+## 8. Verificação e Manutenção
 
 ### Verificar a Instalação
 
@@ -460,7 +406,7 @@ Acesse https://seu-dominio.com no navegador para verificar se o sistema está fu
 Crie um script de backup:
 
 ```bash
-sudo nano /usr/local/bin/backup-faturamento.sh
+sudo nano /usr/local/bin/backup-car-rental.sh
 ```
 
 Adicione:
@@ -468,16 +414,16 @@ Adicione:
 ```bash
 #!/bin/bash
 DATE=$(date +%Y-%m-%d)
-BACKUP_DIR="/backups/faturamento"
+BACKUP_DIR="/backups/car_rental_system"
 
 # Criar diretório de backup
 mkdir -p $BACKUP_DIR
 
 # Backup do banco de dados
-mysqldump -u usuario_faturamento -p'sua_senha_forte' faturamento > $BACKUP_DIR/faturamento_db_$DATE.sql
+mysqldump -u usuario_sistema -p'sua_senha_forte' car_rental_system > $BACKUP_DIR/car_rental_system_db_$DATE.sql
 
 # Backup dos arquivos
-tar -czf $BACKUP_DIR/faturamento_files_$DATE.tar.gz /var/www/faturamento
+tar -czf $BACKUP_DIR/car_rental_system_files_$DATE.tar.gz /var/www/car_rental_system
 
 # Manter apenas os últimos 7 dias de backups
 find $BACKUP_DIR -name "*.sql" -type f -mtime +7 -delete
@@ -487,7 +433,7 @@ find $BACKUP_DIR -name "*.tar.gz" -type f -mtime +7 -delete
 Torne o script executável:
 
 ```bash
-sudo chmod +x /usr/local/bin/backup-faturamento.sh
+sudo chmod +x /usr/local/bin/backup-car-rental.sh
 ```
 
 Agende a execução diária:
@@ -499,49 +445,30 @@ sudo crontab -e
 Adicione:
 
 ```
-0 2 * * * /usr/local/bin/backup-faturamento.sh
+0 2 * * * /usr/local/bin/backup-car-rental.sh
 ```
 
-## 8. Manutenção e Atualização
+## 9. Atualizações Recentes do Sistema
 
-### Atualizar o Sistema
+### Correção na Criação de Faturas
+- Corrigido problema na conversão de datas entre formato string e objeto Date
+- Melhorada a validação dos campos obrigatórios
+- Adicionado tratamento de erros mais detalhado durante o processo de criação
 
-Para atualizar o sistema:
+### Melhorias na Persistência de Dados
+- Otimizada a conexão com o banco de dados
+- Implementada validação adicional antes de salvar os dados
+- Corrigida a sincronização entre a interface e o banco de dados
 
-```bash
-cd /var/www/faturamento
-sudo git pull  # Se estiver usando git
-sudo npm install
-sudo npm run build
-sudo chown -R www-data:www-data /var/www/faturamento
-```
+### Integração com Asaas
+- Implementado proxy PHP para evitar problemas de CORS
+- Melhorado o processo de autenticação com a API
+- Adicionada validação de resposta da API
 
-## 9. Solução de Problemas
-
-### Verificar Logs do Apache
-
-```bash
-sudo tail -f /var/log/apache2/faturamento_error.log
-```
-
-### Verificar Logs do PHP
-
-```bash
-sudo tail -f /var/log/apache2/error.log
-```
-
-### Verificar Status do Apache
-
-```bash
-sudo systemctl status apache2
-```
-
-### Reiniciar Serviços
-
-```bash
-sudo systemctl restart apache2
-sudo systemctl restart mysql
-```
+### Outras Melhorias
+- Otimização geral de desempenho
+- Limpeza de código não utilizado
+- Melhorias na interface do usuário
 
 ## 10. Contato de Suporte
 
