@@ -3,9 +3,9 @@
 
 Este documento fornece orientações para resolver problemas comuns encontrados no sistema de locação de veículos.
 
-## 1. Erro "404 Not Found" ao acessar o sistema
+## 1. Erro "404 Not Found" ao acessar o sistema ou APIs
 
-**Problema:** Quando você tenta acessar o sistema, recebe um erro 404.
+**Problema:** Quando você tenta acessar o sistema ou APIs, recebe um erro 404.
 
 **Solução:**
 
@@ -14,20 +14,39 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
    sudo apache2ctl -t
    ```
 
-2. Verifique se o VirtualHost está habilitado:
+2. Certifique-se de que os módulos necessários estão habilitados:
    ```bash
+   sudo a2enmod rewrite headers
+   sudo systemctl restart apache2
+   ```
+
+3. Verifique se o VirtualHost está habilitado e configurado corretamente:
+   ```bash
+   ls -la /etc/apache2/sites-enabled/
    sudo a2ensite seu-arquivo-vhost.conf
    sudo systemctl reload apache2
    ```
 
-3. Certifique-se de que a diretiva `DocumentRoot` no arquivo VirtualHost aponta para o diretório `dist` correto.
-
-4. Verifique se os arquivos do React estão na pasta correta:
-   ```bash
-   ls -la /var/www/app7.narrota.com.br/dist
+4. Confirme que a diretiva `Alias /api` está configurada corretamente no arquivo VirtualHost:
+   ```
+   Alias /api /var/www/app7.narrota.com.br/public/api
    ```
 
-5. Certifique-se de que o arquivo `.htaccess` está presente no diretório dist com as configurações de rewrite corretas.
+5. Verifique se os arquivos da API estão no local correto:
+   ```bash
+   ls -la /var/www/app7.narrota.com.br/public/api/
+   ```
+
+6. Verifique se os arquivos têm as permissões corretas:
+   ```bash
+   sudo chmod 755 /var/www/app7.narrota.com.br/public/api/*.php
+   sudo chown www-data:www-data /var/www/app7.narrota.com.br/public/api/*.php
+   ```
+
+7. Teste uma rota de API diretamente:
+   ```bash
+   curl -v https://app7.narrota.com.br/api/test-connection.php
+   ```
 
 ## 2. Erro na Conexão com o Banco de Dados
 
@@ -70,6 +89,12 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
    php -f /var/www/app7.narrota.com.br/public/api/test-connection.php
    ```
 
+7. Verifique se o arquivo `.env` está no local correto e acessível:
+   ```bash
+   ls -la /var/www/app7.narrota.com.br/.env
+   sudo chmod 644 /var/www/app7.narrota.com.br/.env
+   ```
+
 ## 3. Dados Fictícios em Vez de Dados Reais
 
 **Problema:** O sistema mostra dados de exemplo em vez dos dados reais do banco.
@@ -83,19 +108,34 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
    NODE_ENV=production
    ```
 
-3. Certifique-se de que as variáveis de ambiente estão sendo carregadas corretamente:
-   ```bash
-   # Crie um script PHP para testar
-   echo '<?php phpinfo(); ?>' > /var/www/app7.narrota.com.br/public/api/phpinfo.php
+3. Certifique-se de que a variável `VITE_API_URL` está configurada corretamente no arquivo `.env`:
    ```
-   Acesse https://app7.narrota.com.br/api/phpinfo.php e procure pelas variáveis de ambiente.
+   VITE_API_URL=https://app7.narrota.com.br
+   ```
 
-4. Verifique se os arquivos de serviço estão usando a API e não os dados mock:
-   - Abra as ferramentas de desenvolvedor no navegador (F12)
-   - Vá para a guia "Network" e observe as chamadas de API
-   - Veja se há erros nas chamadas de API
+4. Teste se a API está retornando dados reais:
+   ```bash
+   # Teste a API de conexão
+   curl -v https://app7.narrota.com.br/api/test-connection.php
+   
+   # Tente executar uma consulta de teste
+   curl -X POST -H "Content-Type: application/json" \
+     -d '{"query":"SELECT 1 as test"}' \
+     https://app7.narrota.com.br/api/execute-query.php
+   ```
 
-5. Confira se o script `invoiceService.ts` está priorizando as chamadas de API.
+5. Verifique se as tabelas existem e contêm dados:
+   ```sql
+   USE car_rental_system;
+   SHOW TABLES;
+   SELECT COUNT(*) FROM invoices;
+   SELECT COUNT(*) FROM clients;
+   ```
+
+6. Verifique os logs da API para debugar problemas:
+   ```bash
+   sudo tail -f /var/www/app7.narrota.com.br/public/api/query_log.txt
+   ```
 
 ## 4. Erro ao Criar Faturas
 
@@ -112,7 +152,9 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
 
 3. Teste a API de criação de faturas diretamente:
    ```bash
-   curl -X POST -H "Content-Type: application/json" -d '{"invoice_number":"TEST-001","contract_id":"CONT-001","client_id":"CLI-001","issue_date":"2023-05-15","due_date":"2023-06-15","amount":100,"status":"pending"}' https://app7.narrota.com.br/api/execute-query.php
+   curl -X POST -H "Content-Type: application/json" \
+     -d '{"query":"INSERT INTO invoices (invoice_number, contract_id, client_id, issue_date, due_date, amount, status) VALUES (\"TEST-001\", \"CONT-001\", \"CLI-001\", \"2023-05-15\", \"2023-06-15\", 100, \"pending\")", "params":[]}' \
+     https://app7.narrota.com.br/api/execute-query.php
    ```
 
 4. Verifique se a tabela de faturas existe no banco de dados:
@@ -127,37 +169,33 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
    VALUES ('TEST-001', 'CONT-001', 'CLI-001', '2023-05-15', '2023-06-15', 100, 'pending');
    ```
 
-## 5. Problemas com CORS e API Asaas
+## 5. Verificando a Configuração do .env
 
-**Problema:** Erros de CORS ao tentar integrar com a API do Asaas.
+Para verificar se o arquivo `.env` está sendo lido corretamente:
 
-**Solução:**
-
-1. Verifique se o proxy PHP está configurado corretamente em `public/api/proxy.php`.
-
-2. Certifique-se de que as variáveis de ambiente para o Asaas estão definidas:
-   ```
-   VITE_USE_PROXY=true
-   VITE_PROXY_URL=/api/proxy.php
-   VITE_ASAAS_API_KEY=seu_token_aqui
-   VITE_ASAAS_ENVIRONMENT=sandbox
-   ```
-
-3. Verifique os logs do proxy:
+1. Crie um script de teste:
    ```bash
-   cat /var/www/app7.narrota.com.br/public/api/proxy_log.txt
+   echo '<?php
+   $env_file = __DIR__ . "/../../.env";
+   if (file_exists($env_file)) {
+       echo "Arquivo .env encontrado\n";
+       $content = file_get_contents($env_file);
+       echo "Conteúdo: " . htmlspecialchars($content) . "\n";
+   } else {
+       echo "Arquivo .env não encontrado\n";
+       echo "Caminho buscado: " . realpath(__DIR__ . "/../..") . "/.env\n";
+   }
+   ?>' > /var/www/app7.narrota.com.br/public/api/check_env.php
    ```
 
-4. Teste o proxy manualmente:
-   ```bash
-   curl -X POST -H "Content-Type: application/json" -d '{"url":"https://sandbox.asaas.com/api/v3/customers"}' https://app7.narrota.com.br/api/proxy.php
+2. Acesse o arquivo para ver os resultados:
    ```
-
-5. Verifique se os cabeçalhos CORS estão sendo enviados corretamente nos arquivos PHP.
+   https://app7.narrota.com.br/api/check_env.php
+   ```
 
 ## 6. Verificação do Ambiente Completo
 
-Se você continua tendo problemas, execute o seguinte script para verificar o ambiente completo:
+Execute o seguinte script para verificar o ambiente completo:
 
 ```bash
 #!/bin/bash
@@ -191,8 +229,12 @@ echo "=== Configuração do VirtualHost ==="
 grep -r "app7.narrota.com.br" /etc/apache2/sites-enabled/
 echo ""
 
-echo "=== Permissões do Diretório ==="
-ls -la /var/www/app7.narrota.com.br
+echo "=== Estrutura de Diretórios ==="
+find /var/www/app7.narrota.com.br -type d | sort
+echo ""
+
+echo "=== Permissões do Diretório API ==="
+ls -la /var/www/app7.narrota.com.br/public/api
 echo ""
 
 echo "=== Verificação de Módulos do Apache ==="
@@ -200,12 +242,8 @@ apache2ctl -M | grep rewrite
 apache2ctl -M | grep headers
 echo ""
 
-echo "=== Verificação do Banco de Dados ==="
-mysql -e "SHOW DATABASES;" -u root -p
-echo ""
-
-echo "=== Teste de Conexão PHP-MySQL ==="
-php -r "try { new PDO('mysql:host=localhost;dbname=car_rental_system', 'root', ''); echo 'Conexão OK\n'; } catch(PDOException \$e) { echo 'Erro: ' . \$e->getMessage() . '\n'; }"
+echo "=== Teste de Acesso à API ==="
+curl -s https://app7.narrota.com.br/api/test-connection.php
 echo ""
 
 echo "===== Fim da Verificação ====="

@@ -10,7 +10,7 @@ BACKUP_DIR="$APP_DIR/backups/$(date +%Y-%m-%d_%H-%M-%S)"
 
 # Make sure we have the directories
 mkdir -p "$DIST_DIR"
-mkdir -p "$PUBLIC_DIR"
+mkdir -p "$PUBLIC_DIR/api"  # Ensure the API directory exists
 mkdir -p "$BACKUP_DIR"
 
 echo "Starting deployment process..."
@@ -41,6 +41,9 @@ echo "Copying API files..."
 mkdir -p "$PUBLIC_DIR/api"
 cp -r public/api/* "$PUBLIC_DIR/api/"
 
+# Ensure correct permissions for API files
+chmod 755 "$PUBLIC_DIR/api/"*.php
+
 # Copy .env file if it exists
 if [ -f ".env" ]; then
     echo "Copying .env file..."
@@ -52,8 +55,27 @@ echo "Setting permissions..."
 chown -R www-data:www-data "$APP_DIR"
 chmod -R 755 "$APP_DIR"
 
-# Restart Apache
-echo "Restarting Apache..."
-systemctl restart apache2
+# Check if Apache module headers is enabled
+if ! apache2ctl -M 2>/dev/null | grep -q headers_module; then
+    echo "Enabling Apache headers module..."
+    a2enmod headers
+    need_restart=true
+fi
+
+# Check if Apache module rewrite is enabled
+if ! apache2ctl -M 2>/dev/null | grep -q rewrite_module; then
+    echo "Enabling Apache rewrite module..."
+    a2enmod rewrite
+    need_restart=true
+fi
+
+# Restart Apache if needed
+if [ "$need_restart" = true ]; then
+    echo "Restarting Apache..."
+    systemctl restart apache2
+else
+    echo "Reloading Apache..."
+    systemctl reload apache2
+fi
 
 echo "Deployment completed successfully!"
