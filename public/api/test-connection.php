@@ -18,7 +18,7 @@ $db_config = array(
     'host' => 'localhost',
     'user' => 'root',
     'password' => '',
-    'dbname' => 'car_rental_system',
+    'dbname' => 'faturamento',
     'port' => 3306
 );
 
@@ -56,7 +56,13 @@ try {
     if ($conn->connect_error) {
         $result = array(
             'success' => false,
-            'message' => 'Conexão falhou: ' . $conn->connect_error
+            'message' => 'Conexão falhou: ' . $conn->connect_error,
+            'config' => array(
+                'host' => $db_config['host'],
+                'user' => $db_config['user'],
+                'database' => $db_config['dbname'],
+                'port' => $db_config['port']
+            )
         );
         error_log("Database connection failed: " . $conn->connect_error);
     } else {
@@ -67,13 +73,25 @@ try {
         if ($test_result) {
             $result = array(
                 'success' => true,
-                'message' => 'Conexão bem sucedida com o banco de dados'
+                'message' => 'Conexão bem sucedida com o banco de dados',
+                'config' => array(
+                    'host' => $db_config['host'],
+                    'user' => $db_config['user'],
+                    'database' => $db_config['dbname'],
+                    'port' => $db_config['port']
+                )
             );
             error_log("Database connection successful");
         } else {
             $result = array(
                 'success' => false,
-                'message' => 'Erro ao executar consulta de teste: ' . $conn->error
+                'message' => 'Erro ao executar consulta de teste: ' . $conn->error,
+                'config' => array(
+                    'host' => $db_config['host'],
+                    'user' => $db_config['user'],
+                    'database' => $db_config['dbname'],
+                    'port' => $db_config['port']
+                )
             );
             error_log("Query test failed: " . $conn->error);
         }
@@ -84,7 +102,13 @@ try {
 } catch (Exception $e) {
     $result = array(
         'success' => false,
-        'message' => 'Exceção: ' . $e->getMessage()
+        'message' => 'Exceção: ' . $e->getMessage(),
+        'config' => array(
+            'host' => $db_config['host'],
+            'user' => $db_config['user'],
+            'database' => $db_config['dbname'],
+            'port' => $db_config['port']
+        )
     );
     error_log("Exception caught: " . $e->getMessage());
 }

@@ -27,7 +27,7 @@ $db_config = array(
     'host' => 'localhost',
     'user' => 'root',
     'password' => '',
-    'dbname' => 'car_rental_system',
+    'dbname' => 'faturamento',
     'port' => 3306
 );
 
@@ -68,6 +68,7 @@ $params = isset($post_data['params']) ? $post_data['params'] : [];
 
 log_message("Query: $query");
 log_message("Params: " . json_encode($params));
+log_message("Database config: " . json_encode($db_config));
 
 try {
     // Create connection
@@ -83,11 +84,18 @@ try {
     if ($conn->connect_error) {
         echo json_encode([
             'success' => false,
-            'message' => 'Conexão falhou: ' . $conn->connect_error
+            'message' => 'Conexão falhou: ' . $conn->connect_error,
+            'config' => [
+                'host' => $db_config['host'],
+                'database' => $db_config['dbname']
+            ]
         ]);
         log_message("Database connection failed: " . $conn->connect_error);
         exit();
     }
+    
+    // Set charset
+    $conn->set_charset("utf8mb4");
     
     // Prepare the statement
     $stmt = $conn->prepare($query);
@@ -96,7 +104,8 @@ try {
     if (!$stmt) {
         echo json_encode([
             'success' => false,
-            'message' => 'Erro ao preparar consulta: ' . $conn->error
+            'message' => 'Erro ao preparar consulta: ' . $conn->error,
+            'query' => $query
         ]);
         log_message("Prepare failed: " . $conn->error);
         $conn->close();
@@ -142,7 +151,8 @@ try {
     if ($stmt->errno) {
         echo json_encode([
             'success' => false,
-            'message' => 'Erro ao executar consulta: ' . $stmt->error
+            'message' => 'Erro ao executar consulta: ' . $stmt->error,
+            'query' => $query
         ]);
         log_message("Execute failed: " . $stmt->error);
         $stmt->close();
@@ -171,7 +181,8 @@ try {
         $result = [
             'success' => true,
             'affectedRows' => $stmt->affected_rows,
-            'insertId' => $conn->insert_id
+            'insertId' => $conn->insert_id,
+            'query' => $query
         ];
     }
     
@@ -186,7 +197,8 @@ try {
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Exceção: ' . $e->getMessage()
+        'message' => 'Exceção: ' . $e->getMessage(),
+        'query' => $query
     ]);
     log_message("Exception caught: " . $e->getMessage());
 }

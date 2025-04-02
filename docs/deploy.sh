@@ -2,8 +2,8 @@
 #!/bin/bash
 # Deployment script for car rental system
 
-# Configuration
-APP_DIR="/var/www/app7.narrota.com.br"
+# Configuration - UPDATED PATH
+APP_DIR="/var/www/html/faturamento"
 DIST_DIR="$APP_DIR/dist"
 PUBLIC_DIR="$APP_DIR/public"
 BACKUP_DIR="$APP_DIR/backups/$(date +%Y-%m-%d_%H-%M-%S)"

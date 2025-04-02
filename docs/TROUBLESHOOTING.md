@@ -1,9 +1,9 @@
 
-# Solução de Problemas Comuns
+# Solução de Problemas Comuns - Sistema de Faturamento
 
 Este documento fornece orientações para resolver problemas comuns encontrados no sistema de locação de veículos.
 
-## 1. Erro "404 Not Found" ao acessar o sistema ou APIs
+## 1. Erro 404 ao Acessar o Sistema ou APIs
 
 **Problema:** Quando você tenta acessar o sistema ou APIs, recebe um erro 404.
 
@@ -20,32 +20,28 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
    sudo systemctl restart apache2
    ```
 
-3. Verifique se o VirtualHost está habilitado e configurado corretamente:
+3. Verifique se o VirtualHost está habilitado:
    ```bash
    ls -la /etc/apache2/sites-enabled/
    sudo a2ensite seu-arquivo-vhost.conf
    sudo systemctl reload apache2
    ```
 
-4. Confirme que a diretiva `Alias /api` está configurada corretamente no arquivo VirtualHost:
+4. Confirme que a diretiva `Alias /api` está configurada corretamente:
    ```
-   Alias /api /var/www/app7.narrota.com.br/public/api
-   ```
-
-5. Verifique se os arquivos da API estão no local correto:
-   ```bash
-   ls -la /var/www/app7.narrota.com.br/public/api/
+   Alias /api /var/www/html/faturamento/public/api
    ```
 
-6. Verifique se os arquivos têm as permissões corretas:
+5. Verifique se os arquivos da API estão no local correto e têm permissões adequadas:
    ```bash
-   sudo chmod 755 /var/www/app7.narrota.com.br/public/api/*.php
-   sudo chown www-data:www-data /var/www/app7.narrota.com.br/public/api/*.php
+   ls -la /var/www/html/faturamento/public/api/
+   sudo chmod 755 /var/www/html/faturamento/public/api/*.php
+   sudo chown www-data:www-data /var/www/html/faturamento/public/api/*.php
    ```
 
-7. Teste uma rota de API diretamente:
+6. Teste uma API diretamente:
    ```bash
-   curl -v https://app7.narrota.com.br/api/test-connection.php
+   curl -v https://seu-dominio.com/api/test-connection.php
    ```
 
 ## 2. Erro na Conexão com o Banco de Dados
@@ -61,38 +57,31 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
 
 2. Teste a conexão manualmente:
    ```bash
-   mysql -u seu_usuario -p -h localhost
+   mysql -u usuario_sistema -p -h localhost faturamento
    ```
 
 3. Verifique as credenciais no arquivo `.env`:
    ```
    VITE_DB_HOST=localhost
-   VITE_DB_USER=seu_usuario
-   VITE_DB_PASSWORD=sua_senha
-   VITE_DB_NAME=car_rental_system
-   VITE_DB_PORT=3306
+   VITE_DB_USER=usuario_sistema
+   VITE_DB_PASSWORD=sua_senha_forte
+   VITE_DB_NAME=faturamento
    ```
 
-4. Verifique se o usuário do banco de dados tem as permissões necessárias:
-   ```sql
-   GRANT ALL PRIVILEGES ON car_rental_system.* TO 'seu_usuario'@'localhost';
-   FLUSH PRIVILEGES;
+4. Verifique se o arquivo `.env` está no local correto:
+   ```bash
+   ls -la /var/www/html/faturamento/.env
+   sudo chmod 644 /var/www/html/faturamento/.env
    ```
 
-5. Verifique os logs de erro do PHP:
+5. Teste o script de conexão diretamente:
+   ```bash
+   php -f /var/www/html/faturamento/public/api/test-connection.php
+   ```
+
+6. Verifique os logs do Apache para erros do PHP:
    ```bash
    sudo tail -f /var/log/apache2/error.log
-   ```
-
-6. Teste o script de conexão diretamente:
-   ```bash
-   php -f /var/www/app7.narrota.com.br/public/api/test-connection.php
-   ```
-
-7. Verifique se o arquivo `.env` está no local correto e acessível:
-   ```bash
-   ls -la /var/www/app7.narrota.com.br/.env
-   sudo chmod 644 /var/www/app7.narrota.com.br/.env
    ```
 
 ## 3. Dados Fictícios em Vez de Dados Reais
@@ -101,101 +90,81 @@ Este documento fornece orientações para resolver problemas comuns encontrados 
 
 **Solução:**
 
-1. Verifique se a conexão com o banco de dados está funcionando corretamente (veja a seção anterior).
-
-2. Verifique se o ambiente de desenvolvimento está desativado. No arquivo `.env`:
-   ```
-   NODE_ENV=production
-   ```
-
-3. Certifique-se de que a variável `VITE_API_URL` está configurada corretamente no arquivo `.env`:
-   ```
-   VITE_API_URL=https://app7.narrota.com.br
-   ```
-
-4. Teste se a API está retornando dados reais:
+1. Verifique se as APIs estão funcionando corretamente:
    ```bash
-   # Teste a API de conexão
-   curl -v https://app7.narrota.com.br/api/test-connection.php
-   
-   # Tente executar uma consulta de teste
    curl -X POST -H "Content-Type: application/json" \
-     -d '{"query":"SELECT 1 as test"}' \
-     https://app7.narrota.com.br/api/execute-query.php
+     -d '{"query":"SELECT COUNT(*) FROM clients"}' \
+     https://seu-dominio.com/api/execute-query.php
    ```
 
-5. Verifique se as tabelas existem e contêm dados:
-   ```sql
-   USE car_rental_system;
-   SHOW TABLES;
-   SELECT COUNT(*) FROM invoices;
-   SELECT COUNT(*) FROM clients;
+2. Verifique se a variável `VITE_API_URL` está configurada corretamente:
+   ```
+   VITE_API_URL=https://seu-dominio.com
    ```
 
-6. Verifique os logs da API para debugar problemas:
+3. Limpe o cache do navegador ou tente em modo anônimo/privado.
+
+4. Verifique se há erros no console do navegador (F12 > Console).
+
+5. Verifique os logs da API para depuração:
    ```bash
-   sudo tail -f /var/www/app7.narrota.com.br/public/api/query_log.txt
+   sudo cat /var/www/html/faturamento/public/api/query_log.txt
    ```
 
-## 4. Erro ao Criar Faturas
+## 4. Problemas com a Interface do Usuário
 
-**Problema:** O sistema apresenta erro ao tentar criar novas faturas.
+**Problema:** A interface não carrega corretamente ou há problemas visuais.
 
 **Solução:**
 
-1. Verifique os erros no console do navegador (F12 > Console).
-
-2. Verifique os logs do PHP para ver se há erros de backend:
+1. Verifique se os arquivos da build estão presentes:
    ```bash
-   sudo tail -f /var/log/apache2/error.log
+   ls -la /var/www/html/faturamento/dist/
    ```
 
-3. Teste a API de criação de faturas diretamente:
+2. Reconstrua o frontend se necessário:
    ```bash
-   curl -X POST -H "Content-Type: application/json" \
-     -d '{"query":"INSERT INTO invoices (invoice_number, contract_id, client_id, issue_date, due_date, amount, status) VALUES (\"TEST-001\", \"CONT-001\", \"CLI-001\", \"2023-05-15\", \"2023-06-15\", 100, \"pending\")", "params":[]}' \
-     https://app7.narrota.com.br/api/execute-query.php
+   cd /var/www/html/faturamento
+   npm run build
    ```
 
-4. Verifique se a tabela de faturas existe no banco de dados:
+3. Verifique se o arquivo `.htaccess` está configurado corretamente para servir uma SPA:
+   ```bash
+   cat /var/www/html/faturamento/dist/.htaccess
+   ```
+
+4. Verifique erros no console do navegador.
+
+## 5. Erros ao Criar ou Atualizar Registros
+
+**Problema:** Não é possível criar ou atualizar clientes, veículos, contratos ou faturas.
+
+**Solução:**
+
+1. Verifique se as tabelas estão criadas corretamente:
    ```sql
-   SHOW TABLES LIKE 'invoices';
+   SHOW TABLES;
+   DESCRIBE clients;
+   DESCRIBE vehicles;
+   DESCRIBE contracts;
    DESCRIBE invoices;
    ```
 
-5. Execute uma consulta manual para inserir uma fatura:
-   ```sql
-   INSERT INTO invoices (invoice_number, contract_id, client_id, issue_date, due_date, amount, status) 
-   VALUES ('TEST-001', 'CONT-001', 'CLI-001', '2023-05-15', '2023-06-15', 100, 'pending');
-   ```
-
-## 5. Verificando a Configuração do .env
-
-Para verificar se o arquivo `.env` está sendo lido corretamente:
-
-1. Crie um script de teste:
+2. Verifique se há erros ao executar consultas:
    ```bash
-   echo '<?php
-   $env_file = __DIR__ . "/../../.env";
-   if (file_exists($env_file)) {
-       echo "Arquivo .env encontrado\n";
-       $content = file_get_contents($env_file);
-       echo "Conteúdo: " . htmlspecialchars($content) . "\n";
-   } else {
-       echo "Arquivo .env não encontrado\n";
-       echo "Caminho buscado: " . realpath(__DIR__ . "/../..") . "/.env\n";
-   }
-   ?>' > /var/www/app7.narrota.com.br/public/api/check_env.php
+   curl -X POST -H "Content-Type: application/json" \
+     -d '{"query":"INSERT INTO clients (name, email) VALUES (\"Teste\", \"teste@example.com\")"}' \
+     https://seu-dominio.com/api/execute-query.php
    ```
 
-2. Acesse o arquivo para ver os resultados:
-   ```
-   https://app7.narrota.com.br/api/check_env.php
+3. Verifique os logs da API:
+   ```bash
+   sudo cat /var/www/html/faturamento/public/api/query_log.txt
    ```
 
-## 6. Verificação do Ambiente Completo
+## 6. Script de Verificação do Ambiente
 
-Execute o seguinte script para verificar o ambiente completo:
+Execute o seguinte script para verificar toda a configuração do ambiente:
 
 ```bash
 #!/bin/bash
@@ -226,15 +195,15 @@ systemctl status mysql --no-pager
 echo ""
 
 echo "=== Configuração do VirtualHost ==="
-grep -r "app7.narrota.com.br" /etc/apache2/sites-enabled/
+grep -r "seu-dominio.com" /etc/apache2/sites-enabled/
 echo ""
 
 echo "=== Estrutura de Diretórios ==="
-find /var/www/app7.narrota.com.br -type d | sort
+find /var/www/html/faturamento -type d | sort
 echo ""
 
 echo "=== Permissões do Diretório API ==="
-ls -la /var/www/app7.narrota.com.br/public/api
+ls -la /var/www/html/faturamento/public/api
 echo ""
 
 echo "=== Verificação de Módulos do Apache ==="
@@ -242,16 +211,36 @@ apache2ctl -M | grep rewrite
 apache2ctl -M | grep headers
 echo ""
 
-echo "=== Teste de Acesso à API ==="
-curl -s https://app7.narrota.com.br/api/test-connection.php
+echo "=== Teste de Conexão com MySQL ==="
+mysql -u usuario_sistema -p'sua_senha_forte' -e "SELECT 1 as test;" faturamento
 echo ""
 
 echo "===== Fim da Verificação ====="
 ```
 
-## Contato de Suporte
+## 7. Verificação dos Logs
 
-Se os problemas persistirem após tentar as soluções acima, entre em contato com o suporte técnico:
+Para ajudar no diagnóstico, verifique os seguintes logs:
 
-- Email: suporte@narrota.com.br
+1. Logs do Apache:
+   ```bash
+   sudo tail -n 100 /var/log/apache2/error.log
+   sudo tail -n 100 /var/log/apache2/access.log
+   ```
+
+2. Logs específicos da aplicação:
+   ```bash
+   tail -n 50 /var/www/html/faturamento/public/api/query_log.txt
+   ```
+
+3. Logs do MySQL:
+   ```bash
+   sudo tail -n 100 /var/log/mysql/error.log
+   ```
+
+## 8. Contato para Suporte
+
+Se os problemas persistirem após tentar as soluções acima, entre em contato:
+
+- Email: suporte@seudominio.com
 - Telefone: (XX) XXXX-XXXX

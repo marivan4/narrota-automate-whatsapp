@@ -7,7 +7,7 @@ const DB_CONFIG = {
   host: import.meta.env.VITE_DB_HOST || "localhost",
   user: import.meta.env.VITE_DB_USER || "root",
   password: import.meta.env.VITE_DB_PASSWORD || "",
-  database: import.meta.env.VITE_DB_NAME || "car_rental_system",
+  database: import.meta.env.VITE_DB_NAME || "faturamento",
   port: parseInt(import.meta.env.VITE_DB_PORT || "3306")
 };
 
@@ -72,7 +72,7 @@ export const PHP_DB_CONFIG = {
   servername: import.meta.env.VITE_DB_HOST || "localhost",
   username: import.meta.env.VITE_DB_USER || "root",
   password: import.meta.env.VITE_DB_PASSWORD || "",
-  dbname: import.meta.env.VITE_DB_NAME || "car_rental_system",
+  dbname: import.meta.env.VITE_DB_NAME || "faturamento",
   port: parseInt(import.meta.env.VITE_DB_PORT || "3306")
 };
 
@@ -123,28 +123,6 @@ export const executeQuery = async (query: string, params: any[] = []): Promise<a
     toast.error("Erro ao executar consulta no banco de dados");
     throw error;
   }
-};
-
-// Example PHP connection string (for reference in PHP implementations)
-export const getPHPConnectionString = () => {
-  return `<?php
-$servername = "${PHP_DB_CONFIG.servername}";
-$username = "${PHP_DB_CONFIG.username}";
-$password = "${PHP_DB_CONFIG.password}";
-$dbname = "${PHP_DB_CONFIG.dbname}";
-$port = ${PHP_DB_CONFIG.port};
-
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname, $port);
-
-// Check connection
-if ($conn->connect_error) {
-  die("Connection failed: " . $conn->connect_error);
-}
-
-// Connection successful
-echo "Connected successfully";
-?>`;
 };
 
 // Verifica se as configurações do banco de dados estão completas

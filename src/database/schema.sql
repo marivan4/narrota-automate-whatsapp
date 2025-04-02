@@ -2,14 +2,11 @@
 -- Database Schema for Car Rental System
 -- Compatible with MySQL and PHP 8.1
 
--- Drop database if it exists (be careful with this in production)
--- DROP DATABASE IF EXISTS car_rental_system;
-
 -- Create database
-CREATE DATABASE IF NOT EXISTS car_rental_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS faturamento CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Use the database
-USE car_rental_system;
+USE faturamento;
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
@@ -293,37 +290,21 @@ VALUES ('Admin', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9ll
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value, setting_type, description)
 VALUES 
-('company_name', 'Car Rental System', 'STRING', 'Company name displayed in the system'),
-('company_address', '123 Main St, City, State', 'STRING', 'Company address used in documents'),
-('company_phone', '+1234567890', 'STRING', 'Company contact phone'),
-('company_email', 'contact@example.com', 'STRING', 'Company contact email'),
-('default_contract_terms', 'Standard contract terms and conditions...', 'TEXT', 'Default terms used in contracts'),
-('whatsapp_global_api_key', 'd9919cda7e370839d33b8946584dac93', 'STRING', 'Global API key for WhatsApp integration'),
-('whatsapp_base_url', 'https://evolutionapi.gpstracker-16.com.br', 'STRING', 'Base URL for WhatsApp API');
+('company_name', 'Sistema de Locação de Veículos', 'STRING', 'Nome da empresa exibido no sistema'),
+('company_address', 'Rua Principal, 123, Centro', 'STRING', 'Endereço da empresa usado em documentos'),
+('company_phone', '(99) 99999-9999', 'STRING', 'Telefone de contato da empresa'),
+('company_email', 'contato@empresa.com.br', 'STRING', 'Email de contato da empresa'),
+('default_contract_terms', 'Termos e condições padrão do contrato...', 'TEXT', 'Termos padrão usados em contratos'),
+('whatsapp_global_api_key', '', 'STRING', 'Chave de API global para integração com WhatsApp'),
+('whatsapp_base_url', 'https://evolutionapi.gpstracker-16.com.br', 'STRING', 'URL base para API do WhatsApp');
 
--- Sample data for testing (remove in production)
+-- Sample data for testing
 INSERT INTO clients (name, email, phone, document_id, address, city, state)
 VALUES 
-('John Doe', 'john@example.com', '1234567890', '123456789', '456 Client St', 'Springfield', 'IL'),
-('Jane Smith', 'jane@example.com', '0987654321', '987654321', '789 Customer Ave', 'Shelbyville', 'IL');
+('João da Silva', 'joao@exemplo.com', '(99) 98888-7777', '123.456.789-00', 'Av. Cliente, 456', 'São Paulo', 'SP'),
+('Maria Oliveira', 'maria@exemplo.com', '(99) 97777-6666', '987.654.321-00', 'Rua do Cliente, 789', 'Rio de Janeiro', 'RJ');
 
 INSERT INTO vehicles (make, model, year, license_plate, color, chassis_number, current_mileage, fuel_type, daily_rate)
 VALUES 
-('Toyota', 'Corolla', 2022, 'ABC1234', 'White', 'TOYT12345678901', 5000, 'GASOLINE', 100.00),
-('Honda', 'Civic', 2021, 'XYZ5678', 'Black', 'HNDA98765432109', 8000, 'FLEX', 90.00);
-
--- Sample invoice data
-INSERT INTO contracts (client_id, vehicle_id, user_id, start_date, end_date, daily_rate, total_amount, status, payment_status)
-VALUES
-(1, 1, 1, '2023-10-01', '2023-10-05', 100.00, 500.00, 'COMPLETED', 'PAID'),
-(2, 2, 1, '2023-11-10', '2023-11-15', 90.00, 450.00, 'ACTIVE', 'PENDING');
-
-INSERT INTO invoices (contract_id, invoice_number, issue_date, due_date, amount, tax_amount, total_amount, status, user_id)
-VALUES
-(1, 'INV-001', '2023-10-01', '2023-10-15', 500.00, 0.00, 500.00, 'PAID', 1),
-(2, 'INV-002', '2023-11-10', '2023-11-25', 450.00, 0.00, 450.00, 'PENDING', 1);
-
-INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, amount)
-VALUES
-(1, 'Aluguel Toyota Corolla - 5 dias', 5, 100.00, 500.00),
-(2, 'Aluguel Honda Civic - 5 dias', 5, 90.00, 450.00);
+('Toyota', 'Corolla', 2022, 'ABC1234', 'Branco', 'TOYT12345678901', 5000, 'FLEX', 150.00),
+('Honda', 'Civic', 2021, 'XYZ5678', 'Preto', 'HNDA98765432109', 8000, 'FLEX', 140.00);

@@ -1,6 +1,8 @@
 
 -- Criação das tabelas para armazenar dados do Asaas no MySQL
 
+USE faturamento;
+
 -- Tabela para armazenar as configurações de integração com o Asaas
 CREATE TABLE IF NOT EXISTS asaas_configurations (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -84,90 +86,6 @@ CREATE TABLE IF NOT EXISTS asaas_webhooks (
     INDEX idx_payment (payment_id),
     INDEX idx_event (event)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Procedimento para sincronizar um pagamento do Asaas com o banco de dados local
-DELIMITER //
-CREATE PROCEDURE sync_asaas_payment(
-    IN p_asaas_id VARCHAR(255),
-    IN p_customer_id INT,
-    IN p_invoice_id VARCHAR(255),
-    IN p_description VARCHAR(255),
-    IN p_value DECIMAL(10,2),
-    IN p_net_value DECIMAL(10,2),
-    IN p_status VARCHAR(50),
-    IN p_billing_type VARCHAR(50),
-    IN p_due_date DATE,
-    IN p_payment_date DATE,
-    IN p_external_reference VARCHAR(255),
-    IN p_invoice_url VARCHAR(255),
-    IN p_bank_slip_url VARCHAR(255)
-)
-BEGIN
-    -- Verificar se o pagamento já existe
-    DECLARE payment_exists INT;
-    DECLARE payment_id INT;
-    
-    SELECT COUNT(*) INTO payment_exists FROM asaas_payments WHERE asaas_id = p_asaas_id;
-    
-    IF payment_exists > 0 THEN
-        -- Atualizar pagamento existente
-        UPDATE asaas_payments
-        SET 
-            customer_id = p_customer_id,
-            invoice_id = p_invoice_id,
-            description = p_description,
-            value = p_value,
-            net_value = p_net_value,
-            status = p_status,
-            billing_type = p_billing_type,
-            due_date = p_due_date,
-            payment_date = p_payment_date,
-            external_reference = p_external_reference,
-            invoice_url = p_invoice_url,
-            bank_slip_url = p_bank_slip_url,
-            updated_at = NOW()
-        WHERE asaas_id = p_asaas_id;
-        
-        SELECT id INTO payment_id FROM asaas_payments WHERE asaas_id = p_asaas_id;
-    ELSE
-        -- Inserir novo pagamento
-        INSERT INTO asaas_payments (
-            asaas_id,
-            customer_id,
-            invoice_id,
-            description,
-            value,
-            net_value,
-            status,
-            billing_type,
-            due_date,
-            payment_date,
-            external_reference,
-            invoice_url,
-            bank_slip_url
-        ) VALUES (
-            p_asaas_id,
-            p_customer_id,
-            p_invoice_id,
-            p_description,
-            p_value,
-            p_net_value,
-            p_status,
-            p_billing_type,
-            p_due_date,
-            p_payment_date,
-            p_external_reference,
-            p_invoice_url,
-            p_bank_slip_url
-        );
-        
-        SET payment_id = LAST_INSERT_ID();
-    END IF;
-    
-    -- Retornar o ID do pagamento
-    SELECT payment_id AS id;
-END //
-DELIMITER ;
 
 -- Índices adicionais para melhorar performance de buscas comuns
 CREATE INDEX idx_status ON asaas_payments(status);
