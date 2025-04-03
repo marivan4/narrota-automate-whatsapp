@@ -41,8 +41,15 @@ echo "Copying API files..."
 mkdir -p "$PUBLIC_DIR/api"
 cp -r public/api/* "$PUBLIC_DIR/api/"
 
+# Copy .htaccess file to API directory
+if [ -f "public/api/.htaccess" ]; then
+    echo "Copying API .htaccess file..."
+    cp public/api/.htaccess "$PUBLIC_DIR/api/.htaccess"
+fi
+
 # Ensure correct permissions for API files
 chmod 755 "$PUBLIC_DIR/api/"*.php
+chmod 644 "$PUBLIC_DIR/api/.htaccess"
 
 # Copy .env file if it exists
 if [ -f ".env" ]; then

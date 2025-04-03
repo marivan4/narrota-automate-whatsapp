@@ -1,246 +1,162 @@
 
-# Solução de Problemas Comuns - Sistema de Faturamento
+# Solução de Problemas - Sistema de Faturamento
 
-Este documento fornece orientações para resolver problemas comuns encontrados no sistema de locação de veículos.
+## 1. Erro 404 ao Acessar as APIs
 
-## 1. Erro 404 ao Acessar o Sistema ou APIs
+### Problema: 
+As requisições para `/api/execute-query.php` ou outras APIs retornam 404.
 
-**Problema:** Quando você tenta acessar o sistema ou APIs, recebe um erro 404.
+### Solução:
 
-**Solução:**
-
-1. Verifique se o Apache está configurado corretamente:
+1. Verifique se o módulo de alias do Apache está habilitado:
    ```bash
-   sudo apache2ctl -t
-   ```
-
-2. Certifique-se de que os módulos necessários estão habilitados:
-   ```bash
-   sudo a2enmod rewrite headers
+   sudo a2enmod alias
    sudo systemctl restart apache2
    ```
 
-3. Verifique se o VirtualHost está habilitado:
+2. Verifique se a configuração do VirtualHost está correta:
    ```bash
-   ls -la /etc/apache2/sites-enabled/
-   sudo a2ensite seu-arquivo-vhost.conf
-   sudo systemctl reload apache2
+   sudo nano /etc/apache2/sites-available/app7.narrota.com.br.conf
    ```
-
-4. Confirme que a diretiva `Alias /api` está configurada corretamente:
+   
+   Certifique-se de que existe a linha:
    ```
    Alias /api /var/www/html/faturamento/public/api
    ```
 
-5. Verifique se os arquivos da API estão no local correto e têm permissões adequadas:
+3. Certifique-se de que o diretório da API existe e tem as permissões corretas:
    ```bash
    ls -la /var/www/html/faturamento/public/api/
+   sudo chmod 755 /var/www/html/faturamento/public/api/
    sudo chmod 755 /var/www/html/faturamento/public/api/*.php
-   sudo chown www-data:www-data /var/www/html/faturamento/public/api/*.php
    ```
 
-6. Teste uma API diretamente:
+4. Teste uma API simples para verificar se está funcionando:
    ```bash
-   curl -v https://seu-dominio.com/api/test-connection.php
+   curl https://app7.narrota.com.br/api/test-connection.php
    ```
 
-## 2. Erro na Conexão com o Banco de Dados
+5. Verifique os logs de erro do Apache:
+   ```bash
+   sudo tail -f /var/log/apache2/app7.narrota.com.br_error.log
+   ```
 
-**Problema:** O sistema não conecta ao banco de dados MySQL.
+## 2. Problemas de Conexão com o Banco de Dados
 
-**Solução:**
+### Problema:
+O sistema não está conectando ao banco de dados MySQL.
 
-1. Verifique se o MySQL está rodando:
+### Solução:
+
+1. Verifique se o MySQL está em execução:
    ```bash
    sudo systemctl status mysql
    ```
 
-2. Teste a conexão manualmente:
+2. Verifique as credenciais no arquivo `.env`:
    ```bash
-   mysql -u usuario_sistema -p -h localhost faturamento
+   cat /var/www/html/faturamento/.env
    ```
-
-3. Verifique as credenciais no arquivo `.env`:
+   
+   Certifique-se de que contém:
    ```
    VITE_DB_HOST=localhost
-   VITE_DB_USER=usuario_sistema
-   VITE_DB_PASSWORD=sua_senha_forte
+   VITE_DB_USER=root (ou seu usuário)
+   VITE_DB_PASSWORD=sua_senha
    VITE_DB_NAME=faturamento
+   VITE_DB_PORT=3306
    ```
 
-4. Verifique se o arquivo `.env` está no local correto:
+3. Verifique se o banco de dados existe:
    ```bash
-   ls -la /var/www/html/faturamento/.env
-   sudo chmod 644 /var/www/html/faturamento/.env
+   mysql -u root -p -e "SHOW DATABASES;"
    ```
 
-5. Teste o script de conexão diretamente:
+4. Se o banco de dados não existir, crie-o:
    ```bash
-   php -f /var/www/html/faturamento/public/api/test-connection.php
+   mysql -u root -p -e "CREATE DATABASE faturamento CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
    ```
 
-6. Verifique os logs do Apache para erros do PHP:
+5. Execute o script para criar as tabelas:
    ```bash
-   sudo tail -f /var/log/apache2/error.log
+   mysql -u root -p faturamento < /var/www/html/faturamento/src/database/schema.sql
    ```
 
-## 3. Dados Fictícios em Vez de Dados Reais
-
-**Problema:** O sistema mostra dados de exemplo em vez dos dados reais do banco.
-
-**Solução:**
-
-1. Verifique se as APIs estão funcionando corretamente:
+6. Teste a API de verificação do banco:
    ```bash
-   curl -X POST -H "Content-Type: application/json" \
-     -d '{"query":"SELECT COUNT(*) FROM clients"}' \
-     https://seu-dominio.com/api/execute-query.php
+   curl https://app7.narrota.com.br/api/verify-database.php
    ```
 
-2. Verifique se a variável `VITE_API_URL` está configurada corretamente:
-   ```
-   VITE_API_URL=https://seu-dominio.com
-   ```
+## 3. Verificação Rápida de Sistema
 
-3. Limpe o cache do navegador ou tente em modo anônimo/privado.
-
-4. Verifique se há erros no console do navegador (F12 > Console).
-
-5. Verifique os logs da API para depuração:
-   ```bash
-   sudo cat /var/www/html/faturamento/public/api/query_log.txt
-   ```
-
-## 4. Problemas com a Interface do Usuário
-
-**Problema:** A interface não carrega corretamente ou há problemas visuais.
-
-**Solução:**
-
-1. Verifique se os arquivos da build estão presentes:
-   ```bash
-   ls -la /var/www/html/faturamento/dist/
-   ```
-
-2. Reconstrua o frontend se necessário:
-   ```bash
-   cd /var/www/html/faturamento
-   npm run build
-   ```
-
-3. Verifique se o arquivo `.htaccess` está configurado corretamente para servir uma SPA:
-   ```bash
-   cat /var/www/html/faturamento/dist/.htaccess
-   ```
-
-4. Verifique erros no console do navegador.
-
-## 5. Erros ao Criar ou Atualizar Registros
-
-**Problema:** Não é possível criar ou atualizar clientes, veículos, contratos ou faturas.
-
-**Solução:**
-
-1. Verifique se as tabelas estão criadas corretamente:
-   ```sql
-   SHOW TABLES;
-   DESCRIBE clients;
-   DESCRIBE vehicles;
-   DESCRIBE contracts;
-   DESCRIBE invoices;
-   ```
-
-2. Verifique se há erros ao executar consultas:
-   ```bash
-   curl -X POST -H "Content-Type: application/json" \
-     -d '{"query":"INSERT INTO clients (name, email) VALUES (\"Teste\", \"teste@example.com\")"}' \
-     https://seu-dominio.com/api/execute-query.php
-   ```
-
-3. Verifique os logs da API:
-   ```bash
-   sudo cat /var/www/html/faturamento/public/api/query_log.txt
-   ```
-
-## 6. Script de Verificação do Ambiente
-
-Execute o seguinte script para verificar toda a configuração do ambiente:
+Execute o comando a seguir para verificar rapidamente o estado do sistema:
 
 ```bash
-#!/bin/bash
+cd /var/www/html/faturamento
+bash -c "
+echo '=== Sistema Operacional ==='
+lsb_release -a 2>/dev/null || cat /etc/os-release
 
-echo "===== Verificação do Ambiente ====="
-echo "Data e hora: $(date)"
-echo ""
-
-echo "=== Sistema Operacional ==="
-lsb_release -a
-echo ""
-
-echo "=== Versão do Apache ==="
+echo -e '\n=== Versão do Apache ==='
 apache2 -v
-echo ""
 
-echo "=== Versão do PHP ==="
+echo -e '\n=== Versão do PHP ==='
 php -v
-echo ""
 
-echo "=== Versão do MySQL ==="
+echo -e '\n=== Versão do MySQL ==='
 mysql --version
-echo ""
 
-echo "=== Status dos Serviços ==="
-systemctl status apache2 --no-pager
-systemctl status mysql --no-pager
-echo ""
+echo -e '\n=== Status dos Serviços ==='
+systemctl status apache2 --no-pager | head -n 10
+systemctl status mysql --no-pager | head -n 10
 
-echo "=== Configuração do VirtualHost ==="
-grep -r "seu-dominio.com" /etc/apache2/sites-enabled/
-echo ""
+echo -e '\n=== Diretório do Projeto ==='
+ls -la /var/www/html/faturamento/
 
-echo "=== Estrutura de Diretórios ==="
-find /var/www/html/faturamento -type d | sort
-echo ""
+echo -e '\n=== Diretório API ==='
+ls -la /var/www/html/faturamento/public/api/
 
-echo "=== Permissões do Diretório API ==="
-ls -la /var/www/html/faturamento/public/api
-echo ""
+echo -e '\n=== Arquivo .env ==='
+cat /var/www/html/faturamento/.env 2>/dev/null || echo '.env não encontrado'
 
-echo "=== Verificação de Módulos do Apache ==="
-apache2ctl -M | grep rewrite
-apache2ctl -M | grep headers
-echo ""
-
-echo "=== Teste de Conexão com MySQL ==="
-mysql -u usuario_sistema -p'sua_senha_forte' -e "SELECT 1 as test;" faturamento
-echo ""
-
-echo "===== Fim da Verificação ====="
+echo -e '\n=== Teste de API ==='
+curl -s https://app7.narrota.com.br/api/test-connection.php || echo 'API inacessível'
+"
 ```
 
-## 7. Verificação dos Logs
+## 4. Comandos para Instalação Completa
 
-Para ajudar no diagnóstico, verifique os seguintes logs:
+Para uma instalação limpa do sistema, execute os seguintes comandos:
 
-1. Logs do Apache:
-   ```bash
-   sudo tail -n 100 /var/log/apache2/error.log
-   sudo tail -n 100 /var/log/apache2/access.log
-   ```
+```bash
+# Instalar Apache, PHP e MySQL
+sudo apt update
+sudo apt install apache2 php8.1 php8.1-mysql php8.1-mbstring php8.1-xml php8.1-curl mysql-server
 
-2. Logs específicos da aplicação:
-   ```bash
-   tail -n 50 /var/www/html/faturamento/public/api/query_log.txt
-   ```
+# Habilitar módulos do Apache necessários
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
+sudo a2enmod alias
 
-3. Logs do MySQL:
-   ```bash
-   sudo tail -n 100 /var/log/mysql/error.log
-   ```
+# Configurar o VirtualHost
+sudo cp /var/www/html/faturamento/docs/apache-vhost-example.conf /etc/apache2/sites-available/app7.narrota.com.br.conf
+sudo a2ensite app7.narrota.com.br.conf
+sudo systemctl restart apache2
 
-## 8. Contato para Suporte
+# Configurar o banco de dados
+sudo mysql -e "CREATE DATABASE IF NOT EXISTS faturamento CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -e "CREATE USER IF NOT EXISTS 'faturamento_user'@'localhost' IDENTIFIED BY 'senha_segura';"
+sudo mysql -e "GRANT ALL PRIVILEGES ON faturamento.* TO 'faturamento_user'@'localhost';"
+sudo mysql -e "FLUSH PRIVILEGES;"
+sudo mysql faturamento < /var/www/html/faturamento/src/database/schema.sql
 
-Se os problemas persistirem após tentar as soluções acima, entre em contato:
+# Configurar o .env
+cp /var/www/html/faturamento/.env.example /var/www/html/faturamento/.env
+sed -i 's/senha_do_banco/senha_segura/g' /var/www/html/faturamento/.env
+sed -i 's/root/faturamento_user/g' /var/www/html/faturamento/.env
 
-- Email: suporte@seudominio.com
-- Telefone: (XX) XXXX-XXXX
+# Configurar permissões
+sudo chown -R www-data:www-data /var/www/html/faturamento
+sudo chmod -R 755 /var/www/html/faturamento
+```

@@ -6,7 +6,10 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Redirect all requests to index.html for SPA routing
+# Don't rewrite API requests to index.html
+RewriteCond %{REQUEST_URI} !^/api/
+
+# Redirect all other requests to index.html for SPA routing
 RewriteRule ^ index.html [QSA,L]
 
 # Set security headers
