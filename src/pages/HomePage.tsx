@@ -3,7 +3,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Users, FileText, FileContract, Settings, Database, HelpCircle } from 'lucide-react';
+import { Users, FileText, Settings, Database, HelpCircle } from 'lucide-react';
+import { AlertCircle } from '@/components/ui/alert-circle';
 import DatabaseStatus from '@/components/database/DatabaseStatus';
 import { useApplication } from '@/context/ApplicationContext';
 
@@ -58,7 +59,7 @@ const HomePage: React.FC = () => {
             <Card className="hover:bg-muted/50 transition-colors">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileContract className="h-5 w-5 text-emerald-500" />
+                  <FileText className="h-5 w-5 text-emerald-500" />
                   Contratos
                 </CardTitle>
               </CardHeader>
