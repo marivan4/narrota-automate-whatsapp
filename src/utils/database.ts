@@ -1,10 +1,11 @@
 
-// Database connection utilities
+/**
+ * Database Utilities for MySQL Integration
+ */
 import { toast } from "sonner";
-import { logError, ErrorSeverity } from "./errorLogger";
 
-// Database configuration - read from environment variables with proper fallbacks
-const DB_CONFIG = {
+// Database configuration
+export const DB_CONFIG = {
   host: import.meta.env.VITE_DB_HOST || "localhost",
   user: import.meta.env.VITE_DB_USER || "root",
   password: import.meta.env.VITE_DB_PASSWORD || "",
@@ -12,95 +13,65 @@ const DB_CONFIG = {
   port: parseInt(import.meta.env.VITE_DB_PORT || "3306")
 };
 
-// Constants
-const SOURCE = 'database.ts';
+// API URL configuration
+export const API_URL = import.meta.env.VITE_API_URL || '';
 
 /**
- * Testa a conexão com o banco de dados via API
+ * Test database connection
+ * @returns Promise resolving to true if connection succeeds
  */
 export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
-    const API_URL = import.meta.env.VITE_API_URL || '';
-    if (!API_URL) {
-      logError("API URL não configurada", ErrorSeverity.ERROR, SOURCE);
-      return false;
-    }
-    
-    console.log(`Testando conexão com o banco de dados via ${API_URL}/api/test-connection.php`);
-    
-    const response = await fetch(`${API_URL}/api/test-connection.php`);
-    const data = await response.json();
-    
-    if (data.success) {
-      console.log("Conexão com banco de dados testada com sucesso:", data);
-      return true;
-    } else {
-      logError(`Falha na conexão com banco de dados: ${data.message}`, ErrorSeverity.ERROR, SOURCE, null, data);
-      return false;
-    }
-  } catch (error) {
-    logError("Erro ao testar conexão com banco de dados", ErrorSeverity.ERROR, SOURCE, error);
-    return false;
-  }
-};
-
-/**
- * Inicializa o banco de dados criando todas as tabelas necessárias
- */
-export const initializeDatabase = async (): Promise<boolean> => {
-  try {
-    const API_URL = import.meta.env.VITE_API_URL || '';
-    if (!API_URL) {
-      logError("API URL não configurada", ErrorSeverity.ERROR, SOURCE);
-      return false;
-    }
-    
-    console.log(`Inicializando banco de dados via ${API_URL}/api/initialize-db.php`);
-    
-    const response = await fetch(`${API_URL}/api/initialize-db.php`, {
-      method: 'POST'
+    console.log("Testing database connection with config:", {
+      host: DB_CONFIG.host,
+      user: DB_CONFIG.user,
+      database: DB_CONFIG.database,
     });
     
-    const data = await response.json();
-    
-    if (data.success) {
-      toast.success("Banco de dados inicializado com sucesso!");
-      console.log("Banco de dados inicializado:", data);
-      return true;
-    } else {
-      logError(`Falha ao inicializar banco de dados: ${data.message}`, ErrorSeverity.ERROR, SOURCE, null, data);
-      toast.error("Falha ao inicializar banco de dados");
+    if (!API_URL) {
+      toast.error("API URL não configurada. Configure a variável VITE_API_URL no arquivo .env");
+      console.error("API URL not configured");
       return false;
     }
+    
+    const response = await fetch(`${API_URL}/api/test-connection.php`);
+    if (!response.ok) {
+      console.error("Connection test failed:", response.status, response.statusText);
+      toast.error("Falha na conexão com o banco de dados");
+      return false;
+    }
+    
+    const data = await response.json();
+    if (!data.success) {
+      console.error("Database connection error:", data.message);
+      toast.error(`Erro de conexão com o banco de dados: ${data.message}`);
+      return false;
+    }
+    
+    console.log("Database connection successful");
+    return true;
   } catch (error) {
-    logError("Erro ao inicializar banco de dados", ErrorSeverity.ERROR, SOURCE, error);
-    toast.error("Erro ao inicializar banco de dados");
+    console.error("Database connection test error:", error);
+    toast.error("Erro ao testar conexão com o banco de dados");
     return false;
   }
 };
 
 /**
- * Executa uma consulta SQL no banco de dados
- * @param query Consulta SQL
- * @param params Parâmetros para a consulta (opcional)
- * @returns Resultado da consulta
+ * Execute a database query
+ * @param query SQL query string
+ * @param params Array of parameters for the query
+ * @returns Promise resolving to the query results
  */
 export const executeQuery = async (query: string, params: any[] = []): Promise<any> => {
   try {
-    console.log(`Executando consulta: ${query}`);
-    if (params.length > 0) {
-      console.log(`Com parâmetros: ${JSON.stringify(params)}`);
-    }
-    
-    const API_URL = import.meta.env.VITE_API_URL || '';
-    
     if (!API_URL) {
-      logError("API URL não configurada para executeQuery", ErrorSeverity.ERROR, SOURCE);
       toast.error("API URL não configurada. Configure a variável VITE_API_URL no arquivo .env");
       throw new Error("API URL não configurada");
     }
     
-    // Execute a consulta através da API PHP
+    console.log("Executing query:", query, "with params:", params);
+    
     const response = await fetch(`${API_URL}/api/execute-query.php`, {
       method: 'POST',
       headers: {
@@ -113,85 +84,64 @@ export const executeQuery = async (query: string, params: any[] = []): Promise<a
     });
     
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Erro desconhecido');
-      logError(`Erro da API: ${response.status} ${response.statusText}`, ErrorSeverity.ERROR, SOURCE, null, { errorText });
+      const errorText = await response.text();
+      console.error("Query execution failed:", response.status, response.statusText, errorText);
       throw new Error(`Erro ao executar consulta: ${response.status} ${response.statusText}`);
     }
     
-    const data = await response.json();
+    const result = await response.json();
+    console.log("Query result:", result);
     
-    // Log error if query failed
-    if (!data.success) {
-      logError(`Falha na execução da consulta: ${data.message}`, ErrorSeverity.ERROR, SOURCE, null, { query, params });
-      throw new Error(data.message || 'Erro na execução da consulta');
+    if (!result.success) {
+      console.error("Query failed:", result.message);
+      throw new Error(result.message || "Erro ao executar consulta");
     }
     
-    console.log("Resultado da consulta:", data);
-    return data;
+    return result;
   } catch (error) {
-    logError("Erro ao executar consulta no banco de dados", ErrorSeverity.ERROR, SOURCE, error, { query, params });
-    toast.error("Erro ao executar consulta no banco de dados");
+    console.error("Query execution error:", error);
     throw error;
   }
 };
 
 /**
- * Executa múltiplas consultas como uma transação
- * @param queries Array de objetos { query, params }
- * @returns Resultados da transação
+ * Initialize database tables if they don't exist
  */
-export const executeTransaction = async (queries: { query: string, params?: any[] }[]): Promise<any> => {
+export const initializeDatabase = async (): Promise<boolean> => {
   try {
-    console.log(`Executando transação com ${queries.length} consultas`);
-    
-    const API_URL = import.meta.env.VITE_API_URL || '';
+    console.log("Initializing database tables");
     
     if (!API_URL) {
-      logError("API URL não configurada para executeTransaction", ErrorSeverity.ERROR, SOURCE);
       toast.error("API URL não configurada. Configure a variável VITE_API_URL no arquivo .env");
-      throw new Error("API URL não configurada");
+      return false;
     }
     
-    // Execute a transação através da API PHP
-    const response = await fetch(`${API_URL}/api/execute-transaction.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        queries
-      })
-    });
-    
+    const response = await fetch(`${API_URL}/api/initialize-database.php`);
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Erro desconhecido');
-      logError(`Erro da API: ${response.status} ${response.statusText}`, ErrorSeverity.ERROR, SOURCE, null, { errorText });
-      throw new Error(`Erro ao executar transação: ${response.status} ${response.statusText}`);
+      console.error("Database initialization failed:", response.status, response.statusText);
+      toast.error("Falha na inicialização do banco de dados");
+      return false;
     }
     
-    const data = await response.json();
+    const result = await response.json();
+    console.log("Database initialization result:", result);
     
-    // Log error if transaction failed
-    if (!data.success) {
-      logError(`Falha na execução da transação: ${data.message}`, ErrorSeverity.ERROR, SOURCE, null, { queries });
-      throw new Error(data.message || 'Erro na execução da transação');
+    if (!result.success) {
+      console.error("Database initialization failed:", result.message);
+      toast.error(`Falha na inicialização do banco de dados: ${result.message}`);
+      return false;
     }
     
-    console.log("Resultado da transação:", data);
-    return data;
+    if (result.tables_created && result.tables_created.length > 0) {
+      toast.success(`Tabelas criadas com sucesso: ${result.tables_created.join(', ')}`);
+    } else {
+      console.log("All required tables already exist");
+    }
+    
+    return true;
   } catch (error) {
-    logError("Erro ao executar transação no banco de dados", ErrorSeverity.ERROR, SOURCE, error, { queries });
-    toast.error("Erro ao executar transação no banco de dados");
-    throw error;
+    console.error("Database initialization error:", error);
+    toast.error("Erro ao inicializar banco de dados");
+    return false;
   }
-};
-
-// Export config and functions
-export { DB_CONFIG };
-export default {
-  testConnection: testDatabaseConnection,
-  initializeDatabase,
-  executeQuery,
-  executeTransaction,
-  config: DB_CONFIG
 };

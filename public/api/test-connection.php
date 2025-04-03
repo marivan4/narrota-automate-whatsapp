@@ -1,10 +1,16 @@
 
 <?php
-// API endpoint to test database connection
+// API endpoint for testing database connection
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 // Function to log to a file
 function log_message($message) {
@@ -45,6 +51,8 @@ if (file_exists($env_file)) {
     }
 }
 
+log_message("Using database config: " . json_encode($db_config));
+
 try {
     // Create connection
     $conn = new mysqli(
@@ -57,45 +65,35 @@ try {
 
     // Check connection
     if ($conn->connect_error) {
-        log_message("Database connection failed: " . $conn->connect_error);
+        log_message("Connection failed: " . $conn->connect_error);
         echo json_encode([
             'success' => false,
             'message' => 'Conexão falhou: ' . $conn->connect_error,
             'config' => [
                 'host' => $db_config['host'],
-                'database' => $db_config['dbname'],
-                'port' => $db_config['port']
+                'database' => $db_config['dbname']
             ]
         ]);
         exit();
     }
     
-    // Test query to ensure database is working
-    $query = "SELECT 1 as test";
-    $result = $conn->query($query);
+    // Set charset to UTF8
+    $conn->set_charset("utf8mb4");
     
-    if (!$result) {
-        log_message("Test query failed: " . $conn->error);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Consulta de teste falhou: ' . $conn->error
-        ]);
-        exit();
+    // Test query to ensure database is working
+    $query_result = $conn->query("SELECT 1 as test");
+    if (!$query_result) {
+        throw new Exception("Erro ao executar consulta de teste: " . $conn->error);
     }
     
-    $row = $result->fetch_assoc();
-    
-    // Success response
     log_message("Database connection successful");
     echo json_encode([
         'success' => true,
         'message' => 'Conexão com o banco de dados estabelecida com sucesso',
         'config' => [
             'host' => $db_config['host'],
-            'database' => $db_config['dbname'],
-            'version' => $conn->server_info
-        ],
-        'test_result' => $row
+            'database' => $db_config['dbname']
+        ]
     ]);
     
     $conn->close();

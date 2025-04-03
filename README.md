@@ -1,69 +1,77 @@
-# Welcome to your Lovable project
 
-## Project info
+# Sistema de Faturamento
 
-**URL**: https://lovable.dev/projects/4c955f5f-9458-495b-8b8f-b5cbdc0aa8f8
+## Configuração do Banco de Dados
 
-## How can I edit this code?
+Este sistema requer um banco de dados MySQL para funcionar corretamente. Siga os passos abaixo para configurar:
 
-There are several ways of editing your application.
+### 1. Requisitos
 
-**Use Lovable**
+- PHP 7.4 ou superior
+- MySQL 5.7 ou superior
+- Servidor web (Apache, Nginx, etc.)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/4c955f5f-9458-495b-8b8f-b5cbdc0aa8f8) and start prompting.
+### 2. Configuração do Banco de Dados
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Crie um banco de dados MySQL com o nome `faturamento`:
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```sql
+CREATE DATABASE faturamento CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-**Edit a file directly in GitHub**
+2. Crie um usuário para o banco de dados (opcional, mas recomendado):
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sql
+CREATE USER 'faturamento_user'@'localhost' IDENTIFIED BY 'sua_senha_segura';
+GRANT ALL PRIVILEGES ON faturamento.* TO 'faturamento_user'@'localhost';
+FLUSH PRIVILEGES;
+```
 
-**Use GitHub Codespaces**
+3. As tabelas serão criadas automaticamente na primeira execução do sistema.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 3. Configuração do Ambiente
 
-## What technologies are used for this project?
+1. Copie o arquivo `.env.example` para `.env`:
 
-This project is built with .
+```bash
+cp .env.example .env
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. Edite o arquivo `.env` com suas configurações:
 
-## How can I deploy this project?
+```
+VITE_API_URL=http://localhost/caminho_para_o_sistema/public
+VITE_DB_HOST=localhost
+VITE_DB_USER=faturamento_user
+VITE_DB_PASSWORD=sua_senha_segura
+VITE_DB_NAME=faturamento
+VITE_DB_PORT=3306
+```
 
-Simply open [Lovable](https://lovable.dev/projects/4c955f5f-9458-495b-8b8f-b5cbdc0aa8f8) and click on Share -> Publish.
+**IMPORTANTE:** O `VITE_API_URL` deve apontar para a pasta `public` do projeto no seu servidor web.
 
-## I want to use a custom domain - is that possible?
+### 4. Implantação dos arquivos PHP
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Os arquivos PHP na pasta `public/api` devem ser acessíveis via servidor web. Certifique-se que seu servidor web esteja configurado para servir esses arquivos corretamente.
+
+### 5. Verificação da Conexão
+
+Após configurar, você pode verificar se a conexão está funcionando através do indicador de status do banco de dados na barra de navegação do sistema.
+
+## Estrutura do Banco de Dados
+
+O sistema utiliza as seguintes tabelas:
+
+- `clients` - Cadastro de clientes
+- `contracts` - Contratos vinculados a clientes
+- `invoices` - Faturas geradas a partir de contratos
+- `invoice_items` - Itens individuais de cada fatura
+
+## Solução de Problemas
+
+Se você encontrar problemas de conexão com o banco de dados:
+
+1. Verifique se o servidor MySQL está em execução
+2. Confirme se as credenciais no arquivo `.env` estão corretas
+3. Certifique-se que o `VITE_API_URL` está apontando para o local correto
+4. Verifique os logs de erro no arquivo `/public/api/api_log.txt`
