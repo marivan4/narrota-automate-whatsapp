@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import { createDatabaseConnection } from '@/utils/database';
+import { testDatabaseConnection } from '@/utils/database';
 import { Invoice, InvoiceFormData } from '@/models/invoice';
 import { invoicesData } from '@/data/mockInvoices';
 
@@ -8,7 +8,8 @@ export const invoiceDataService = {
   // Get all invoices
   getInvoices: async (): Promise<Invoice[]> => {
     try {
-      await createDatabaseConnection();
+      // Test database connection instead of trying to create one
+      await testDatabaseConnection();
       // In a real implementation, this would fetch from a database
       return invoicesData;
     } catch (error) {
@@ -21,7 +22,8 @@ export const invoiceDataService = {
   // Get invoice by ID
   getInvoiceById: async (id: string): Promise<Invoice | null> => {
     try {
-      await createDatabaseConnection();
+      // Test database connection instead of trying to create one
+      await testDatabaseConnection();
       // In a real implementation, this would fetch from a database
       const invoice = invoicesData.find(inv => inv.id === id);
       return invoice || null;
@@ -35,7 +37,8 @@ export const invoiceDataService = {
   // Create new invoice
   createInvoice: async (data: InvoiceFormData): Promise<Invoice | null> => {
     try {
-      await createDatabaseConnection();
+      // Test database connection instead of trying to create one
+      await testDatabaseConnection();
       // In a real implementation, this would save to a database
       const newInvoice: Invoice = {
         id: `INV-${String(invoicesData.length + 1).padStart(3, '0')}`,
@@ -88,7 +91,8 @@ export const invoiceDataService = {
   // Update invoice
   updateInvoice: async (id: string, data: Partial<InvoiceFormData>): Promise<Invoice | null> => {
     try {
-      await createDatabaseConnection();
+      // Test database connection instead of trying to create one
+      await testDatabaseConnection();
       // In a real implementation, this would update in a database
       const index = invoicesData.findIndex(inv => inv.id === id);
       if (index === -1) return null;
@@ -125,7 +129,8 @@ export const invoiceDataService = {
   // Delete invoice
   deleteInvoice: async (id: string): Promise<boolean> => {
     try {
-      await createDatabaseConnection();
+      // Test database connection instead of trying to create one
+      await testDatabaseConnection();
       // In a real implementation, this would delete from a database
       const initialLength = invoicesData.length;
       const newInvoicesData = invoicesData.filter(inv => inv.id !== id);

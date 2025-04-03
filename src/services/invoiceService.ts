@@ -4,7 +4,7 @@ import { asaasService } from '@/services/asaas';
 import { InvoiceFormData } from '@/models/invoice';
 import { Client } from '@/models/client';
 import { Invoice } from '@/models/invoice'; // Import Invoice from models
-import { PHP_DB_CONFIG, executeQuery } from '@/utils/database';
+import { DB_CONFIG, executeQuery } from '@/utils/database';
 import { toast } from 'sonner';
 
 // Use import.meta.env instead of process.env for Vite
