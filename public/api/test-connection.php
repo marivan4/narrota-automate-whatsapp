@@ -1,18 +1,21 @@
 
 <?php
-// Enable CORS
+// API endpoint to test database connection
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
 
-// Log the connection attempt
-error_log("Test connection requested");
+// Function to log to a file
+function log_message($message) {
+    $log_file = __DIR__ . '/api_log.txt';
+    $timestamp = date('Y-m-d H:i:s');
+    file_put_contents($log_file, "[$timestamp] [test-connection.php] $message\n", FILE_APPEND);
+}
 
-// Attempt to connect to the database
-$result = array();
+log_message("Database connection test requested");
 
-// Read connection parameters from environment variables or use defaults
+// Read connection parameters from environment variables
 $env_file = __DIR__ . '/../../.env';
 $db_config = array(
     'host' => 'localhost',
@@ -54,65 +57,54 @@ try {
 
     // Check connection
     if ($conn->connect_error) {
-        $result = array(
+        log_message("Database connection failed: " . $conn->connect_error);
+        echo json_encode([
             'success' => false,
             'message' => 'Conexão falhou: ' . $conn->connect_error,
-            'config' => array(
+            'config' => [
                 'host' => $db_config['host'],
-                'user' => $db_config['user'],
                 'database' => $db_config['dbname'],
                 'port' => $db_config['port']
-            )
-        );
-        error_log("Database connection failed: " . $conn->connect_error);
-    } else {
-        // Test query
-        $test_query = "SELECT 1 as test";
-        $test_result = $conn->query($test_query);
-        
-        if ($test_result) {
-            $result = array(
-                'success' => true,
-                'message' => 'Conexão bem sucedida com o banco de dados',
-                'config' => array(
-                    'host' => $db_config['host'],
-                    'user' => $db_config['user'],
-                    'database' => $db_config['dbname'],
-                    'port' => $db_config['port']
-                )
-            );
-            error_log("Database connection successful");
-        } else {
-            $result = array(
-                'success' => false,
-                'message' => 'Erro ao executar consulta de teste: ' . $conn->error,
-                'config' => array(
-                    'host' => $db_config['host'],
-                    'user' => $db_config['user'],
-                    'database' => $db_config['dbname'],
-                    'port' => $db_config['port']
-                )
-            );
-            error_log("Query test failed: " . $conn->error);
-        }
-        
-        // Close the connection
-        $conn->close();
+            ]
+        ]);
+        exit();
     }
-} catch (Exception $e) {
-    $result = array(
-        'success' => false,
-        'message' => 'Exceção: ' . $e->getMessage(),
-        'config' => array(
+    
+    // Test query to ensure database is working
+    $query = "SELECT 1 as test";
+    $result = $conn->query($query);
+    
+    if (!$result) {
+        log_message("Test query failed: " . $conn->error);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Consulta de teste falhou: ' . $conn->error
+        ]);
+        exit();
+    }
+    
+    $row = $result->fetch_assoc();
+    
+    // Success response
+    log_message("Database connection successful");
+    echo json_encode([
+        'success' => true,
+        'message' => 'Conexão com o banco de dados estabelecida com sucesso',
+        'config' => [
             'host' => $db_config['host'],
-            'user' => $db_config['user'],
             'database' => $db_config['dbname'],
-            'port' => $db_config['port']
-        )
-    );
-    error_log("Exception caught: " . $e->getMessage());
+            'version' => $conn->server_info
+        ],
+        'test_result' => $row
+    ]);
+    
+    $conn->close();
+    
+} catch (Exception $e) {
+    log_message("Exception: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'Exceção: ' . $e->getMessage()
+    ]);
 }
-
-// Return the result as JSON
-echo json_encode($result);
 ?>

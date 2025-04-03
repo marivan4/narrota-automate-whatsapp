@@ -100,15 +100,13 @@ try {
     // Prepare the statement
     $stmt = $conn->prepare($query);
     
-    // If preparation failed
     if (!$stmt) {
         echo json_encode([
             'success' => false,
-            'message' => 'Erro ao preparar consulta: ' . $conn->error,
+            'message' => 'Erro na preparação da consulta: ' . $conn->error,
             'query' => $query
         ]);
-        log_message("Prepare failed: " . $conn->error);
-        $conn->close();
+        log_message("Query preparation failed: " . $conn->error);
         exit();
     }
     
@@ -121,7 +119,7 @@ try {
         foreach ($params as $param) {
             if (is_int($param)) {
                 $param_type .= 'i';
-            } elseif (is_double($param)) {
+            } elseif (is_double($param) || is_float($param)) {
                 $param_type .= 'd';
             } elseif (is_string($param)) {
                 $param_type .= 's';
@@ -154,9 +152,7 @@ try {
             'message' => 'Erro ao executar consulta: ' . $stmt->error,
             'query' => $query
         ]);
-        log_message("Execute failed: " . $stmt->error);
-        $stmt->close();
-        $conn->close();
+        log_message("Query execution failed: " . $stmt->error);
         exit();
     }
     
@@ -174,25 +170,23 @@ try {
         
         $result = [
             'success' => true,
-            'data' => $data
+            'data' => $data,
+            'rowCount' => count($data)
         ];
     } else {
         // For INSERT, UPDATE, DELETE
         $result = [
             'success' => true,
             'affectedRows' => $stmt->affected_rows,
-            'insertId' => $conn->insert_id,
-            'query' => $query
+            'insertId' => $conn->insert_id
         ];
     }
     
-    // Close statement and connection
+    echo json_encode($result);
+    log_message("Query executed successfully. Result: " . json_encode($result));
+    
     $stmt->close();
     $conn->close();
-    
-    // Return the result
-    echo json_encode($result);
-    log_message("Query executed successfully");
     
 } catch (Exception $e) {
     echo json_encode([
@@ -200,6 +194,6 @@ try {
         'message' => 'Exceção: ' . $e->getMessage(),
         'query' => $query
     ]);
-    log_message("Exception caught: " . $e->getMessage());
+    log_message("Exception: " . $e->getMessage());
 }
 ?>
