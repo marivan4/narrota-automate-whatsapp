@@ -10,6 +10,10 @@ import SettingsPage from '@/pages/Settings';
 import HelpPage from '@/pages/Help';
 import NotFound from '@/pages/NotFound';
 import Dashboard from '@/pages/Dashboard';
+import WhatsAppSettings from '@/pages/WhatsAppSettings';
+import Checklists from '@/pages/Checklists';
+import Profile from '@/pages/Profile';
+import WhatsAppConnect from '@/pages/WhatsAppConnect';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -25,6 +29,10 @@ const AppRoutes: React.FC = () => {
             <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/help" element={<HelpPage />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/whatsapp-settings" element={<WhatsAppSettings />} />
+            <Route path="/whatsapp-connect" element={<WhatsAppConnect />} />
+            <Route path="/checklists" element={<Checklists />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useApplication } from '@/context/ApplicationContext';
-import { Database, Home, Users, FileText, HelpCircle, LayoutDashboard } from 'lucide-react';
+import { Database, Home, Users, FileText, HelpCircle, LayoutDashboard, CheckSquare, MessageSquare, UserCircle } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { dbConnected, initApp } = useApplication();
@@ -37,6 +37,14 @@ const Navbar: React.FC = () => {
               <FileText className="mr-1 h-4 w-4" />
               Faturas
             </Link>
+            <Link to="/checklists" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+              <CheckSquare className="mr-1 h-4 w-4" />
+              Checklists
+            </Link>
+            <Link to="/whatsapp-settings" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+              <MessageSquare className="mr-1 h-4 w-4" />
+              WhatsApp
+            </Link>
             <Link to="/help" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
               <HelpCircle className="mr-1 h-4 w-4" />
               Ajuda
@@ -54,6 +62,12 @@ const Navbar: React.FC = () => {
             {dbConnected ? "BD Conectado" : "BD Desconectado"}
           </Button>
           <ModeToggle />
+          <Button variant="outline" size="sm" asChild className="flex items-center gap-1">
+            <Link to="/profile">
+              <UserCircle className="h-4 w-4 mr-1" />
+              Perfil
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" asChild>
             <Link to="/settings">Configurações</Link>
           </Button>

@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Users, FileText, Settings, HelpCircle, LayoutDashboard } from 'lucide-react';
+import { Users, FileText, Settings, HelpCircle, LayoutDashboard, CheckSquare, MessageSquare, UserCircle } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 import DatabaseStatus from '@/components/database/DatabaseStatus';
 import { useApplication } from '@/context/ApplicationContext';
@@ -111,6 +111,38 @@ const HomePage: React.FC = () => {
             </Card>
           </Link>
           
+          <Link to="/checklists" className="group">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckSquare className="h-5 w-5 text-orange-500" />
+                  Checklists
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Gerenciar checklists e verificações
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link to="/whatsapp-settings" className="group">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-green-500" />
+                  WhatsApp
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Configurar integração com WhatsApp
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+          
           <Link to="/help" className="group">
             <Card className="hover:bg-muted/50 transition-colors">
               <CardHeader>
@@ -122,6 +154,22 @@ const HomePage: React.FC = () => {
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   Suporte e documentação
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link to="/profile" className="group">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCircle className="h-5 w-5 text-cyan-500" />
+                  Perfil
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Gerenciar seu perfil de usuário
                 </p>
               </CardContent>
             </Card>
