@@ -9,6 +9,7 @@ import InvoicesPage from '@/pages/Invoices';
 import SettingsPage from '@/pages/Settings';
 import HelpPage from '@/pages/Help';
 import NotFound from '@/pages/NotFound';
+import Dashboard from '@/pages/Dashboard';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ const AppRoutes: React.FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/contracts" element={<ContractsPage />} />
             <Route path="/invoices" element={<InvoicesPage />} />

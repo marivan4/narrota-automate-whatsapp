@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Users, FileText, Settings, HelpCircle } from 'lucide-react';
+import { Users, FileText, Settings, HelpCircle, LayoutDashboard } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 import DatabaseStatus from '@/components/database/DatabaseStatus';
 import { useApplication } from '@/context/ApplicationContext';
@@ -15,12 +15,20 @@ const HomePage: React.FC = () => {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Sistema de Faturamento</h1>
-        <Button variant="outline" asChild>
-          <Link to="/settings">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurações
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/dashboard">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/settings">
+              <Settings className="h-4 w-4 mr-2" />
+              Configurações
+            </Link>
+          </Button>
+        </div>
       </div>
       
       {!dbConnected && (
@@ -39,6 +47,22 @@ const HomePage: React.FC = () => {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="grid gap-6 md:grid-cols-2">
+          <Link to="/dashboard" className="group">
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LayoutDashboard className="h-5 w-5 text-indigo-500" />
+                  Dashboard
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Visão geral do sistema
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+          
           <Link to="/clients" className="group">
             <Card className="hover:bg-muted/50 transition-colors">
               <CardHeader>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useApplication } from '@/context/ApplicationContext';
-import { Database, Home, Users, FileText, HelpCircle } from 'lucide-react';
+import { Database, Home, Users, FileText, HelpCircle, LayoutDashboard } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { dbConnected, initApp } = useApplication();
@@ -20,6 +20,10 @@ const Navbar: React.FC = () => {
             <Link to="/" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
               <Home className="mr-1 h-4 w-4" />
               Início
+            </Link>
+            <Link to="/dashboard" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+              <LayoutDashboard className="mr-1 h-4 w-4" />
+              Dashboard
             </Link>
             <Link to="/clients" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
               <Users className="mr-1 h-4 w-4" />
