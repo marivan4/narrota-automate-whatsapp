@@ -2,16 +2,19 @@
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { ApplicationProvider } from '@/context/ApplicationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import AppRoutes from '@/routes';
 import '@/styles/globals.css';
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <ApplicationProvider>
-        <AppRoutes />
-        <Toaster />
-      </ApplicationProvider>
+      <AuthProvider>
+        <ApplicationProvider>
+          <AppRoutes />
+          <Toaster />
+        </ApplicationProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
