@@ -3,6 +3,12 @@ import React from 'react';
 import { Routes, Route, BrowserRouter } from 'react-router-dom';
 import HomePage from '@/pages/HomePage';
 import Navbar from '@/components/layout/Navbar';
+import ClientsPage from '@/pages/Clients';
+import ContractsPage from '@/pages/Contracts';
+import InvoicesPage from '@/pages/Invoices';
+import SettingsPage from '@/pages/Settings';
+import HelpPage from '@/pages/Help';
+import NotFound from '@/pages/NotFound';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -12,7 +18,12 @@ const AppRoutes: React.FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            {/* Add more routes as needed */}
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/contracts" element={<ContractsPage />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/help" element={<HelpPage />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>

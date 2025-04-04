@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useApplication } from '@/context/ApplicationContext';
-import { Database, Home } from 'lucide-react';
+import { Database, Home, Users, FileText, HelpCircle } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { dbConnected, initApp } = useApplication();
@@ -21,14 +21,21 @@ const Navbar: React.FC = () => {
               <Home className="mr-1 h-4 w-4" />
               Início
             </Link>
-            <Link to="/clients" className="text-lg font-medium transition-colors hover:text-primary">
+            <Link to="/clients" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+              <Users className="mr-1 h-4 w-4" />
               Clientes
             </Link>
-            <Link to="/contracts" className="text-lg font-medium transition-colors hover:text-primary">
+            <Link to="/contracts" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+              <FileText className="mr-1 h-4 w-4" />
               Contratos
             </Link>
-            <Link to="/invoices" className="text-lg font-medium transition-colors hover:text-primary">
+            <Link to="/invoices" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+              <FileText className="mr-1 h-4 w-4" />
               Faturas
+            </Link>
+            <Link to="/help" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+              <HelpCircle className="mr-1 h-4 w-4" />
+              Ajuda
             </Link>
           </nav>
         </div>
@@ -43,6 +50,9 @@ const Navbar: React.FC = () => {
             {dbConnected ? "BD Conectado" : "BD Desconectado"}
           </Button>
           <ModeToggle />
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/settings">Configurações</Link>
+          </Button>
         </div>
       </div>
     </header>

@@ -3,8 +3,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Users, FileText, Settings, Database, HelpCircle } from 'lucide-react';
-import { AlertCircle } from '@/components/ui/alert-circle';
+import { Users, FileText, Settings, HelpCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import DatabaseStatus from '@/components/database/DatabaseStatus';
 import { useApplication } from '@/context/ApplicationContext';
 
