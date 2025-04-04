@@ -75,14 +75,28 @@ try {
     $conn->set_charset("utf8mb4");
     log_message("Connected to database successfully");
     
-    // Read migration SQL file
-    $migration_file = __DIR__ . '/../../src/database/migration_updates.sql';
-    if (!file_exists($migration_file)) {
+    // Read migration SQL file - check multiple possible locations
+    $migration_file_paths = [
+        __DIR__ . '/../../src/database/migration_updates.sql',
+        __DIR__ . '/../src/database/migration_updates.sql',
+        __DIR__ . '/migration_updates.sql'
+    ];
+    
+    $migration_file = null;
+    foreach ($migration_file_paths as $path) {
+        if (file_exists($path)) {
+            $migration_file = $path;
+            log_message("Found migration file at: " . $path);
+            break;
+        }
+    }
+    
+    if (!$migration_file) {
         echo json_encode([
             'success' => false,
-            'message' => 'Arquivo de migração não encontrado: ' . $migration_file
+            'message' => 'Arquivo de migração não encontrado. Verifique as seguintes localizações: ' . implode(', ', $migration_file_paths)
         ]);
-        log_message("Migration file not found: " . $migration_file);
+        log_message("Migration file not found in any of the checked locations");
         exit();
     }
     
