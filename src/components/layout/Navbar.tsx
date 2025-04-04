@@ -4,10 +4,15 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useApplication } from '@/context/ApplicationContext';
-import { Database, Home, Users, FileText, HelpCircle, LayoutDashboard, CheckSquare, MessageSquare, UserCircle } from 'lucide-react';
+import { Database, Home, Users, FileText, HelpCircle, LayoutDashboard, CheckSquare, MessageSquare, UserCircle, BookOpen } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/types';
 
 const Navbar: React.FC = () => {
   const { dbConnected, initApp } = useApplication();
+  const { authState, isAuthorized } = useAuth();
+  
+  const isAdmin = authState?.user?.role === UserRole.ADMIN;
 
   return (
     <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur">
@@ -49,6 +54,12 @@ const Navbar: React.FC = () => {
               <HelpCircle className="mr-1 h-4 w-4" />
               Ajuda
             </Link>
+            {isAdmin && (
+              <Link to="/documentation" className="flex items-center text-lg font-medium transition-colors hover:text-primary">
+                <BookOpen className="mr-1 h-4 w-4" />
+                Documentação
+              </Link>
+            )}
           </nav>
         </div>
         <div className="flex items-center gap-2">

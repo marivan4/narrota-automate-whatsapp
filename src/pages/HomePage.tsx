@@ -3,13 +3,18 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Users, FileText, Settings, HelpCircle, LayoutDashboard, CheckSquare, MessageSquare, UserCircle } from 'lucide-react';
+import { Users, FileText, Settings, HelpCircle, LayoutDashboard, CheckSquare, MessageSquare, UserCircle, BookOpen } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 import DatabaseStatus from '@/components/database/DatabaseStatus';
 import { useApplication } from '@/context/ApplicationContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/types';
 
 const HomePage: React.FC = () => {
   const { dbConnected } = useApplication();
+  const { authState } = useAuth();
+  
+  const isAdmin = authState?.user?.role === UserRole.ADMIN;
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -174,6 +179,24 @@ const HomePage: React.FC = () => {
               </CardContent>
             </Card>
           </Link>
+          
+          {isAdmin && (
+            <Link to="/documentation" className="group">
+              <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-purple-500" />
+                    Documentação
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Manuais e guias técnicos
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
         </div>
         
         <div>
