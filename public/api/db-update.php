@@ -45,10 +45,23 @@ try {
         $errorPaths = implode(', ', $migration_file_paths);
         log_message("Migration file not found in any of the checked locations: $errorPaths", "db-update");
         
-        // Try to fix by copying from the current directory if available
-        if (file_exists(__DIR__ . '/migration_updates.sql')) {
-            // File is already in the current directory
-            $migration_file = __DIR__ . '/migration_updates.sql';
+        // Create the migration file in the current directory if it doesn't exist
+        $defaultMigrationPath = __DIR__ . '/migration_updates.sql';
+        if (!file_exists($defaultMigrationPath)) {
+            // Copy from src/database if it exists
+            if (file_exists(__DIR__ . '/../../src/database/migration_updates.sql')) {
+                copy(__DIR__ . '/../../src/database/migration_updates.sql', $defaultMigrationPath);
+                log_message("Copied migration file from src/database to current directory", "db-update");
+            } else {
+                // Create default migration file content
+                $defaultMigration = file_get_contents(__DIR__ . '/schema.sql');
+                file_put_contents($defaultMigrationPath, $defaultMigration);
+                log_message("Created default migration file in current directory", "db-update");
+            }
+        }
+        
+        if (file_exists($defaultMigrationPath)) {
+            $migration_file = $defaultMigrationPath;
             log_message("Using migration file from current directory", "db-update");
         } else {
             echo json_encode([

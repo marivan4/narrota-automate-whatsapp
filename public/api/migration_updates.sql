@@ -46,33 +46,7 @@ CREATE TABLE IF NOT EXISTS whatsapp_configs (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Ensure checklists table exists
-CREATE TABLE IF NOT EXISTS checklists (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  description TEXT,
-  type ENUM('VEHICLE_PICKUP', 'VEHICLE_RETURN', 'MAINTENANCE', 'GENERAL') NOT NULL,
-  created_by INT,
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (created_by) REFERENCES users(id)
-);
-
--- Ensure checklist_items table exists
-CREATE TABLE IF NOT EXISTS checklist_items (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  checklist_id INT NOT NULL,
-  title VARCHAR(100) NOT NULL,
-  description TEXT,
-  is_required BOOLEAN DEFAULT FALSE,
-  order_index INT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (checklist_id) REFERENCES checklists(id) ON DELETE CASCADE
-);
-
--- Ensure clients table exists
+-- Ensure clients table exists with all required fields
 CREATE TABLE IF NOT EXISTS clients (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -127,6 +101,32 @@ CREATE TABLE IF NOT EXISTS invoices (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
+-- Ensure checklists table exists
+CREATE TABLE IF NOT EXISTS checklists (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  type ENUM('VEHICLE_PICKUP', 'VEHICLE_RETURN', 'MAINTENANCE', 'GENERAL') NOT NULL,
+  created_by INT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- Ensure checklist_items table exists
+CREATE TABLE IF NOT EXISTS checklist_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  checklist_id INT NOT NULL,
+  title VARCHAR(100) NOT NULL,
+  description TEXT,
+  is_required BOOLEAN DEFAULT FALSE,
+  order_index INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (checklist_id) REFERENCES checklists(id) ON DELETE CASCADE
 );
 
 -- Insert default admin user if not exists (password: admin123)

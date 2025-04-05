@@ -32,7 +32,7 @@ function get_db_config() {
     $db_config = array(
         'host' => 'localhost',
         'user' => 'root',
-        'password' => 'Mari0307@',  // Usando a senha dos seus logs
+        'password' => 'Mari0307@',  // Using the password from the logs
         'dbname' => 'faturamento',
         'port' => 3306
     );
@@ -80,12 +80,7 @@ function create_db_connection() {
         // Check connection
         if ($conn->connect_error) {
             log_message("Connection failed: " . $conn->connect_error);
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Conexão falhou: ' . $conn->connect_error
-            ]);
-            exit();
+            throw new Exception("Connection failed: " . $conn->connect_error);
         }
         
         // Set charset
@@ -95,12 +90,7 @@ function create_db_connection() {
         return $conn;
     } catch (Exception $e) {
         log_message("Exception when creating connection: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Exceção ao criar conexão: ' . $e->getMessage()
-        ]);
-        exit();
+        throw $e; // Re-throw to be caught by the caller
     }
 }
 
