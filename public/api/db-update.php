@@ -15,9 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 // Include config file
 require_once __DIR__ . '/config.php';
 
-// Function to log to a file (already defined in config.php)
-// function log_message($message) {...}
-
+// Log the request
 log_message("Database update requested", "db-update");
 
 try {
@@ -55,6 +53,9 @@ try {
             } else {
                 // Create default migration file content
                 $defaultMigration = file_get_contents(__DIR__ . '/schema.sql');
+                if (!$defaultMigration) {
+                    $defaultMigration = "-- Default migration schema\n-- Add tables here";
+                }
                 file_put_contents($defaultMigrationPath, $defaultMigration);
                 log_message("Created default migration file in current directory", "db-update");
             }
@@ -72,8 +73,41 @@ try {
         }
     }
     
-    $migration_sql = file_get_contents($migration_file);
-    $queries = array_filter(explode(';', $migration_sql), 'trim');
+    // Log the content of the migration file for debugging
+    $migration_content = file_get_contents($migration_file);
+    log_message("Migration file content (first 200 chars): " . substr($migration_content, 0, 200) . "...", "db-update");
+    
+    $migration_sql = $migration_content;
+    // Make sure we have proper line endings
+    $migration_sql = str_replace("\r\n", "\n", $migration_sql);
+    
+    // Split into individual queries (more robust method)
+    $queries = [];
+    $current_query = '';
+    $lines = explode("\n", $migration_sql);
+    
+    foreach ($lines as $line) {
+        // Skip empty lines and comments
+        $trimmed_line = trim($line);
+        if (empty($trimmed_line) || strpos($trimmed_line, '--') === 0) {
+            continue;
+        }
+        
+        $current_query .= $line . "\n";
+        
+        // When we reach a semicolon, it's the end of a query
+        if (substr(trim($line), -1) === ';') {
+            $queries[] = $current_query;
+            $current_query = '';
+        }
+    }
+    
+    // Add any remaining query
+    if (!empty(trim($current_query))) {
+        $queries[] = $current_query;
+    }
+    
+    log_message("Parsed " . count($queries) . " queries from migration file", "db-update");
     
     // Begin transaction
     $conn->begin_transaction();
@@ -81,19 +115,36 @@ try {
     $errors = [];
     
     try {
-        foreach ($queries as $query) {
+        foreach ($queries as $index => $query) {
             $query = trim($query);
             if (!empty($query)) {
-                log_message("Executing query: " . substr($query, 0, 100) . "...", "db-update");
-                if ($conn->query($query)) {
-                    $executed++;
-                    log_message("Query executed successfully", "db-update");
-                } else {
+                log_message("Executing query #$index: " . substr($query, 0, 100) . "...", "db-update");
+                
+                // Try to execute the query
+                try {
+                    if ($conn->query($query)) {
+                        $executed++;
+                        log_message("Query #$index executed successfully", "db-update");
+                    } else {
+                        // Only consider it an error if it's not a "table already exists" warning
+                        if ($conn->errno != 1050 && $conn->errno != 1060) {
+                            $errors[] = [
+                                'query' => $query,
+                                'error' => $conn->error,
+                                'errno' => $conn->errno
+                            ];
+                            log_message("Query #$index failed: " . $conn->error . " (errno: " . $conn->errno . ")", "db-update");
+                        } else {
+                            log_message("Query #$index skipped (object already exists)", "db-update");
+                            $executed++; // Count as executed since it's not a real error
+                        }
+                    }
+                } catch (Exception $e) {
                     $errors[] = [
                         'query' => $query,
-                        'error' => $conn->error
+                        'error' => $e->getMessage()
                     ];
-                    log_message("Query failed: " . $conn->error, "db-update");
+                    log_message("Query #$index exception: " . $e->getMessage(), "db-update");
                 }
             }
         }
@@ -102,42 +153,19 @@ try {
             $conn->commit();
             log_message("Database update completed successfully. $executed queries executed.", "db-update");
             
-            // Verifique se a tabela invoice_items existe
-            $result = $conn->query("SHOW TABLES LIKE 'invoice_items'");
-            if ($result->num_rows == 0) {
-                // Crie a tabela invoice_items se não existir
-                $create_items_table = "
-                CREATE TABLE IF NOT EXISTS invoice_items (
-                  id INT AUTO_INCREMENT PRIMARY KEY,
-                  invoice_id INT NOT NULL,
-                  description VARCHAR(255) NOT NULL,
-                  quantity INT NOT NULL DEFAULT 1,
-                  price DECIMAL(10,2) NOT NULL,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                  FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
-                )";
-                
-                if ($conn->query($create_items_table)) {
-                    log_message("Created invoice_items table", "db-update");
-                    $executed++;
-                } else {
-                    log_message("Failed to create invoice_items table: " . $conn->error, "db-update");
-                }
-            }
-            
             echo json_encode([
                 'success' => true,
                 'message' => "Banco de dados atualizado com sucesso. $executed consultas executadas."
             ]);
         } else {
-            $conn->rollback();
-            log_message("Database update failed with errors.", "db-update");
+            // If there are non-fatal errors, we still commit and report them
+            $conn->commit();
+            log_message("Database update completed with some errors. $executed queries executed successfully, " . count($errors) . " failed.", "db-update");
             
             echo json_encode([
-                'success' => false,
-                'message' => "Atualização falhou com erros. Verificar logs.",
-                'errors' => $errors
+                'success' => true,
+                'message' => "Banco de dados atualizado com alguns avisos. $executed consultas executadas.",
+                'warnings' => $errors
             ]);
         }
         

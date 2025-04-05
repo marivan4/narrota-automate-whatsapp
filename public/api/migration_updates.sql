@@ -52,12 +52,12 @@ CREATE TABLE IF NOT EXISTS clients (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(100) NOT NULL,
   phone VARCHAR(20),
-  document_id VARCHAR(50),
+  document VARCHAR(50),
   document_type VARCHAR(50),
   address VARCHAR(255),
   city VARCHAR(100),
   state VARCHAR(50),
-  zip_code VARCHAR(20),
+  zipCode VARCHAR(20),
   asaas_id VARCHAR(100),
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -78,10 +78,29 @@ CREATE TABLE IF NOT EXISTS contracts (
   vehicle_id VARCHAR(50),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (client_id) REFERENCES clients(id)
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
 );
 
--- Ensure invoices table exists
+-- Ensure vehicles table exists (added missing table)
+CREATE TABLE IF NOT EXISTS vehicles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  client_id INT,
+  plate VARCHAR(20),
+  model VARCHAR(100),
+  brand VARCHAR(100),
+  year VARCHAR(10),
+  color VARCHAR(50),
+  chassis VARCHAR(50),
+  renavam VARCHAR(50),
+  notes TEXT,
+  status VARCHAR(20) DEFAULT 'active',
+  tracker_id VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
+);
+
+-- Ensure invoices table exists with the correct structure
 CREATE TABLE IF NOT EXISTS invoices (
   id INT AUTO_INCREMENT PRIMARY KEY,
   invoice_number VARCHAR(50) NOT NULL,
@@ -94,21 +113,21 @@ CREATE TABLE IF NOT EXISTS invoices (
   tax_amount DECIMAL(10,2) DEFAULT 0,
   total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
   discount DECIMAL(10,2) DEFAULT 0,
-  status VARCHAR(20) DEFAULT 'pending',
+  status ENUM('pending', 'paid', 'overdue', 'cancelled') DEFAULT 'pending',
   payment_method VARCHAR(20),
   payment_id VARCHAR(100),
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (client_id) REFERENCES clients(id)
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
 );
 
--- Ensure invoice_items table exists
+-- Ensure invoice_items table exists with correct structure
 CREATE TABLE IF NOT EXISTS invoice_items (
   id INT AUTO_INCREMENT PRIMARY KEY,
   invoice_id INT NOT NULL,
   description VARCHAR(255) NOT NULL,
-  quantity INT NOT NULL DEFAULT 1,
+  quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
   price DECIMAL(10,2) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -125,7 +144,7 @@ CREATE TABLE IF NOT EXISTS checklists (
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Ensure checklist_items table exists
@@ -139,6 +158,37 @@ CREATE TABLE IF NOT EXISTS checklist_items (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (checklist_id) REFERENCES checklists(id) ON DELETE CASCADE
+);
+
+-- Create contract_checklists table if not exists
+CREATE TABLE IF NOT EXISTS contract_checklists (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  contract_id INT NOT NULL,
+  checklist_id INT NOT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  completed_by INT,
+  completed_at TIMESTAMP NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+  FOREIGN KEY (checklist_id) REFERENCES checklists(id) ON DELETE CASCADE,
+  FOREIGN KEY (completed_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Create completed_checklist_items table if not exists
+CREATE TABLE IF NOT EXISTS completed_checklist_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  contract_checklist_id INT NOT NULL,
+  checklist_item_id INT NOT NULL,
+  value TEXT,
+  satisfied BOOLEAN DEFAULT FALSE,
+  photo_url VARCHAR(255),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (contract_checklist_id) REFERENCES contract_checklists(id) ON DELETE CASCADE,
+  FOREIGN KEY (checklist_item_id) REFERENCES checklist_items(id) ON DELETE CASCADE
 );
 
 -- Insert default admin user if not exists (password: admin123)
@@ -158,3 +208,27 @@ INSERT INTO users (name, email, password, role)
 SELECT 'Regular User', 'user@example.com', '$2y$10$UvObcJu9W1P7QYvImPd0I.j1I8z4qDOITbFRqhxxbcC3XGQ.Gu1c6', 'USER'
 FROM dual
 WHERE NOT EXISTS (SELECT * FROM users WHERE email = 'user@example.com');
+
+-- Add some test data if tables are empty
+INSERT INTO clients (name, email, phone, document, address, city, state)
+SELECT 'Cliente Teste', 'cliente@teste.com', '(11) 99999-9999', '123.456.789-00', 'Rua dos Testes, 123', 'São Paulo', 'SP'
+FROM dual
+WHERE NOT EXISTS (SELECT * FROM clients LIMIT 1);
+
+-- Add a test contract if table is empty
+INSERT INTO contracts (contract_number, client_id, start_date, end_date, value, status)
+SELECT 'CONT-001', 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 1200.00, 'active'
+FROM dual
+WHERE NOT EXISTS (SELECT * FROM contracts LIMIT 1);
+
+-- Add a test invoice if table is empty
+INSERT INTO invoices (invoice_number, contract_id, client_id, issue_date, due_date, amount, total_amount, status)
+SELECT 'INV-001', 'CONT-001', 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 100.00, 100.00, 'pending'
+FROM dual
+WHERE NOT EXISTS (SELECT * FROM invoices LIMIT 1);
+
+-- Add test invoice items if table is empty
+INSERT INTO invoice_items (invoice_id, description, quantity, price)
+SELECT 1, 'Mensalidade de rastreamento', 1, 100.00
+FROM dual
+WHERE NOT EXISTS (SELECT * FROM invoice_items LIMIT 1);

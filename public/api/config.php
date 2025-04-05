@@ -7,8 +7,17 @@
 
 // Function to log to a file
 function log_message($message, $file_prefix = 'api') {
-    $log_file = __DIR__ . "/{$file_prefix}_log.txt";
+    $log_dir = __DIR__ . '/logs';
+    
+    // Create logs directory if it doesn't exist
+    if (!is_dir($log_dir)) {
+        mkdir($log_dir, 0755, true);
+    }
+    
+    $log_file = $log_dir . "/{$file_prefix}_" . date('Y-m-d') . ".log";
     $timestamp = date('Y-m-d H:i:s');
+    
+    // Actually write the log
     file_put_contents($log_file, "[$timestamp] $message\n", FILE_APPEND);
 }
 
@@ -32,7 +41,7 @@ function get_db_config() {
     $db_config = array(
         'host' => 'localhost',
         'user' => 'root',
-        'password' => 'Mari0307@',  // Using the password from the logs
+        'password' => '',  // Default empty password
         'dbname' => 'faturamento',
         'port' => 3306
     );
@@ -123,7 +132,7 @@ function execute_query($conn, $query, $params = []) {
                     $param_type .= 's';
                 } else {
                     $param_type .= 's';
-                    $param = strval($param);
+                    $param = $param === null ? null : strval($param);
                 }
                 $param_values[] = $param;
             }

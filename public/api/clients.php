@@ -1,11 +1,6 @@
 
 <?php
-/**
- * API endpoint for clients
- * Handles CRUD operations for clients
- */
-
-// Setup headers and include configuration
+// API endpoint for clients management
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -17,269 +12,394 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-// Include configuration file
+// Include config and utilities
 require_once __DIR__ . '/config.php';
 
-// Function to log to a file
-function log_api($message) {
-    log_message($message, "clients-api");
-}
-
-// Get the request method and resource ID
-$method = $_SERVER['REQUEST_METHOD'];
-$id = null;
-
-// Parse the URL to get the resource ID
-$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-$uri_parts = explode('/', trim(parse_url($request_uri, PHP_URL_PATH), '/'));
-$resource_index = array_search('clients', $uri_parts);
-
-// Check if ID is provided in the URL
-if ($resource_index !== false && isset($uri_parts[$resource_index + 1])) {
-    $id = $uri_parts[$resource_index + 1];
-}
-
-// Log request details
-log_api("Received {$method} request" . ($id ? " for client ID: {$id}" : ""));
+// Log request
+$request_method = $_SERVER['REQUEST_METHOD'];
+$request_path = $_SERVER['REQUEST_URI'];
+log_message("Received $request_method request to $request_path", 'clients');
 
 try {
-    // Create connection
+    // Create database connection
     $conn = create_db_connection();
-    log_api("Connected to database successfully");
-
-    // Process based on HTTP method
-    switch ($method) {
+    log_message("Connected to database", 'clients');
+    
+    // Determine action based on HTTP method
+    switch ($request_method) {
         case 'GET':
-            // Retrieve client(s)
-            if ($id) {
-                // Get single client
-                $query = "SELECT * FROM clients WHERE id = ?";
-                log_api("Executing query to retrieve client with ID: {$id}");
-                
-                $stmt = $conn->prepare($query);
-                $stmt->bind_param("s", $id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result->num_rows > 0) {
-                    $client = $result->fetch_assoc();
-                    log_api("Client found and returned");
-                    echo json_encode($client);
-                } else {
-                    log_api("Client not found");
-                    http_response_code(404);
-                    echo json_encode(["message" => "Cliente não encontrado"]);
-                }
-            } else {
-                // Get all clients
-                $query = "SELECT * FROM clients ORDER BY name";
-                log_api("Executing query to retrieve all clients");
-                
-                $result = $conn->query($query);
-                $clients = [];
-                
-                if ($result && $result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
-                        $clients[] = $row;
-                    }
-                }
-                
-                log_api("Returned " . count($clients) . " clients");
-                echo json_encode($clients);
-            }
+            handleGetClients($conn);
             break;
-            
         case 'POST':
-            // Create new client
-            $data = json_decode(file_get_contents("php://input"), true);
-            log_api("Received data for new client: " . json_encode($data));
-            
-            if (!$data) {
-                log_api("Invalid data received");
-                http_response_code(400);
-                echo json_encode(["message" => "Dados inválidos"]);
-                break;
-            }
-            
-            $query = "INSERT INTO clients (
-                name, email, phone, document_id, document_type, 
-                address, city, state, zip_code, asaas_id, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param(
-                "sssssssssss", 
-                $data['name'], 
-                $data['email'], 
-                $data['phone'], 
-                $data['document_id'], 
-                $data['document_type'], 
-                $data['address'], 
-                $data['city'], 
-                $data['state'], 
-                $data['zip_code'], 
-                $data['asaas_id'], 
-                $data['notes']
-            );
-            
-            if ($stmt->execute()) {
-                $client_id = $conn->insert_id;
-                $client = [
-                    'id' => $client_id,
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                    'phone' => $data['phone'],
-                    'document_id' => $data['document_id'],
-                    'document_type' => $data['document_type'],
-                    'address' => $data['address'],
-                    'city' => $data['city'],
-                    'state' => $data['state'],
-                    'zip_code' => $data['zip_code'],
-                    'asaas_id' => $data['asaas_id'],
-                    'notes' => $data['notes'],
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ];
-                
-                log_api("Client created successfully with ID: {$client_id}");
-                http_response_code(201);
-                echo json_encode($client);
-            } else {
-                log_api("Error creating client: " . $stmt->error);
-                http_response_code(500);
-                echo json_encode(["message" => "Erro ao criar cliente: " . $stmt->error]);
-            }
+            handleCreateClient($conn);
             break;
-            
         case 'PUT':
-            // Update client
-            if (!$id) {
-                log_api("ID not provided for update");
-                http_response_code(400);
-                echo json_encode(["message" => "ID do cliente não fornecido"]);
-                break;
-            }
-            
-            $data = json_decode(file_get_contents("php://input"), true);
-            log_api("Received data for updating client {$id}: " . json_encode($data));
-            
-            if (!$data) {
-                log_api("Invalid data received");
-                http_response_code(400);
-                echo json_encode(["message" => "Dados inválidos"]);
-                break;
-            }
-            
-            $query = "UPDATE clients SET 
-                name = ?, 
-                email = ?, 
-                phone = ?, 
-                document_id = ?, 
-                document_type = ?, 
-                address = ?, 
-                city = ?, 
-                state = ?, 
-                zip_code = ?, 
-                asaas_id = ?, 
-                notes = ?, 
-                updated_at = CURRENT_TIMESTAMP 
-            WHERE id = ?";
-            
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param(
-                "sssssssssssi", 
-                $data['name'], 
-                $data['email'], 
-                $data['phone'], 
-                $data['document_id'], 
-                $data['document_type'], 
-                $data['address'], 
-                $data['city'], 
-                $data['state'], 
-                $data['zip_code'], 
-                $data['asaas_id'], 
-                $data['notes'], 
-                $id
-            );
-            
-            if ($stmt->execute()) {
-                $client = [
-                    'id' => $id,
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                    'phone' => $data['phone'],
-                    'document_id' => $data['document_id'],
-                    'document_type' => $data['document_type'],
-                    'address' => $data['address'],
-                    'city' => $data['city'],
-                    'state' => $data['state'],
-                    'zip_code' => $data['zip_code'],
-                    'asaas_id' => $data['asaas_id'],
-                    'notes' => $data['notes'],
-                    'updated_at' => date('Y-m-d H:i:s')
-                ];
-                
-                log_api("Client updated successfully");
-                echo json_encode($client);
-            } else {
-                log_api("Error updating client: " . $stmt->error);
-                http_response_code(500);
-                echo json_encode(["message" => "Erro ao atualizar cliente: " . $stmt->error]);
-            }
+            handleUpdateClient($conn);
             break;
-            
         case 'DELETE':
-            // Delete client
-            if (!$id) {
-                log_api("ID not provided for deletion");
-                http_response_code(400);
-                echo json_encode(["message" => "ID do cliente não fornecido"]);
-                break;
-            }
-            
-            log_api("Attempting to delete client with ID: {$id}");
-            
-            // Check if there are related records
-            $check_query = "SELECT COUNT(*) as count FROM contracts WHERE client_id = ?";
-            $check_stmt = $conn->prepare($check_query);
-            $check_stmt->bind_param("i", $id);
-            $check_stmt->execute();
-            $check_result = $check_stmt->get_result();
-            $related_count = $check_result->fetch_assoc()['count'];
-            
-            if ($related_count > 0) {
-                log_api("Client has related contracts and cannot be deleted");
-                http_response_code(409);
-                echo json_encode(["message" => "Este cliente possui contratos associados e não pode ser excluído"]);
-                break;
-            }
-            
-            $query = "DELETE FROM clients WHERE id = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("i", $id);
-            
-            if ($stmt->execute()) {
-                log_api("Client deleted successfully");
-                echo json_encode(["message" => "Cliente excluído com sucesso"]);
-            } else {
-                log_api("Error deleting client: " . $stmt->error);
-                http_response_code(500);
-                echo json_encode(["message" => "Erro ao excluir cliente: " . $stmt->error]);
-            }
+            handleDeleteClient($conn);
             break;
-            
         default:
-            log_api("Method not allowed: {$method}");
             http_response_code(405);
-            echo json_encode(["message" => "Método não permitido"]);
-            break;
+            echo json_encode([
+                'success' => false,
+                'message' => 'Método não permitido'
+            ]);
     }
     
-    // Close connection
     $conn->close();
     
 } catch (Exception $e) {
-    log_api("Exception: " . $e->getMessage());
+    log_message("Error: " . $e->getMessage(), 'clients');
+    
     http_response_code(500);
-    echo json_encode(["message" => "Erro de servidor: " . $e->getMessage()]);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Erro: ' . $e->getMessage()
+    ]);
 }
+
+// Function to handle GET requests (list or get single client)
+function handleGetClients($conn) {
+    log_message("Handling GET request", 'clients');
+    
+    // Check if ID is provided (get single client)
+    if (isset($_GET['id'])) {
+        $client_id = $_GET['id'];
+        log_message("Getting client with ID: $client_id", 'clients');
+        
+        // Get client details
+        $query = "SELECT * FROM clients WHERE id = ?";
+        
+        try {
+            $result = execute_query($conn, $query, [$client_id]);
+            
+            if ($result['success'] && count($result['data']) > 0) {
+                log_message("Client found, returning data", 'clients');
+                echo json_encode($result['data'][0]);
+            } else {
+                log_message("Client not found", 'clients');
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Cliente não encontrado'
+                ]);
+            }
+        } catch (Exception $e) {
+            log_message("Error getting client: " . $e->getMessage(), 'clients');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erro ao buscar cliente: ' . $e->getMessage()
+            ]);
+        }
+    } else {
+        // List all clients
+        log_message("Listing all clients", 'clients');
+        
+        $query = "SELECT * FROM clients ORDER BY name";
+        
+        try {
+            $result = execute_query($conn, $query);
+            
+            if ($result['success']) {
+                log_message("Returning " . count($result['data']) . " clients", 'clients');
+                echo json_encode($result['data']);
+            } else {
+                throw new Exception("Falha ao consultar clientes");
+            }
+        } catch (Exception $e) {
+            log_message("Error listing clients: " . $e->getMessage(), 'clients');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erro ao listar clientes: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+
+// Function to handle POST requests (create client)
+function handleCreateClient($conn) {
+    log_message("Handling POST request", 'clients');
+    
+    // Get JSON data from request
+    $json_data = file_get_contents('php://input');
+    $data = json_decode($json_data, true);
+    
+    if (!$data) {
+        log_message("Invalid JSON data", 'clients');
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Dados JSON inválidos'
+        ]);
+        return;
+    }
+    
+    log_message("Creating client with data: " . json_encode($data), 'clients');
+    
+    // Validate required fields
+    $required_fields = ['name', 'email'];
+    foreach ($required_fields as $field) {
+        if (!isset($data[$field]) || empty($data[$field])) {
+            log_message("Required field missing: $field", 'clients');
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "Campo obrigatório não fornecido: $field"
+            ]);
+            return;
+        }
+    }
+    
+    // Start transaction - not in a try block because we want any errors to propagate
+    $conn->begin_transaction();
+    
+    try {
+        // Insert client
+        $query = "
+            INSERT INTO clients (
+                name, email, phone, document, document_type, address, city, state, zipCode, notes, asaas_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ";
+        
+        $params = [
+            $data['name'],
+            $data['email'],
+            $data['phone'] ?? null,
+            $data['document'] ?? null,
+            $data['document_type'] ?? null,
+            $data['address'] ?? null,
+            $data['city'] ?? null,
+            $data['state'] ?? null,
+            $data['zipCode'] ?? null,
+            $data['notes'] ?? null,
+            $data['asaas_id'] ?? null
+        ];
+        
+        $result = execute_query($conn, $query, $params);
+        
+        if ($result['success']) {
+            $client_id = $result['insertId'];
+            log_message("Created client with ID: $client_id", 'clients');
+            
+            // Commit transaction
+            $conn->commit();
+            
+            // Return success with the new client ID
+            echo json_encode([
+                'success' => true,
+                'message' => 'Cliente criado com sucesso',
+                'id' => $client_id
+            ]);
+        } else {
+            throw new Exception("Falha ao inserir cliente: " . $conn->error);
+        }
+    } catch (Exception $e) {
+        // Rollback transaction
+        $conn->rollback();
+        
+        log_message("Error creating client: " . $e->getMessage(), 'clients');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Erro ao criar cliente: ' . $e->getMessage()
+        ]);
+    }
+}
+
+// Function to handle PUT requests (update client)
+function handleUpdateClient($conn) {
+    log_message("Handling PUT request", 'clients');
+    
+    // Get ID from query string
+    if (!isset($_GET['id'])) {
+        log_message("Client ID not provided", 'clients');
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'ID do cliente não fornecido'
+        ]);
+        return;
+    }
+    
+    $client_id = $_GET['id'];
+    
+    // Get JSON data from request
+    $json_data = file_get_contents('php://input');
+    $data = json_decode($json_data, true);
+    
+    if (!$data) {
+        log_message("Invalid JSON data", 'clients');
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Dados JSON inválidos'
+        ]);
+        return;
+    }
+    
+    log_message("Updating client $client_id with data: " . json_encode($data), 'clients');
+    
+    // Validate required fields
+    $required_fields = ['name', 'email'];
+    foreach ($required_fields as $field) {
+        if (!isset($data[$field]) || empty($data[$field])) {
+            log_message("Required field missing: $field", 'clients');
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "Campo obrigatório não fornecido: $field"
+            ]);
+            return;
+        }
+    }
+    
+    // Start transaction
+    $conn->begin_transaction();
+    
+    try {
+        // Update client
+        $query = "
+            UPDATE clients SET 
+                name = ?, 
+                email = ?, 
+                phone = ?,
+                document = ?, 
+                document_type = ?, 
+                address = ?,
+                city = ?, 
+                state = ?, 
+                zipCode = ?,
+                notes = ?,
+                asaas_id = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ";
+        
+        $params = [
+            $data['name'],
+            $data['email'],
+            $data['phone'] ?? null,
+            $data['document'] ?? null,
+            $data['document_type'] ?? null,
+            $data['address'] ?? null,
+            $data['city'] ?? null,
+            $data['state'] ?? null,
+            $data['zipCode'] ?? null,
+            $data['notes'] ?? null,
+            $data['asaas_id'] ?? null,
+            $client_id
+        ];
+        
+        $result = execute_query($conn, $query, $params);
+        
+        if ($result['success']) {
+            // Commit transaction
+            $conn->commit();
+            
+            log_message("Client updated successfully", 'clients');
+            echo json_encode([
+                'success' => true,
+                'message' => 'Cliente atualizado com sucesso'
+            ]);
+        } else {
+            throw new Exception("Falha ao atualizar cliente: " . $conn->error);
+        }
+    } catch (Exception $e) {
+        // Rollback transaction
+        $conn->rollback();
+        
+        log_message("Error updating client: " . $e->getMessage(), 'clients');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Erro ao atualizar cliente: ' . $e->getMessage()
+        ]);
+    }
+}
+
+// Function to handle DELETE requests
+function handleDeleteClient($conn) {
+    log_message("Handling DELETE request", 'clients');
+    
+    // Get ID from query string
+    if (!isset($_GET['id'])) {
+        log_message("Client ID not provided", 'clients');
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'ID do cliente não fornecido'
+        ]);
+        return;
+    }
+    
+    $client_id = $_GET['id'];
+    log_message("Deleting client with ID: $client_id", 'clients');
+    
+    // Start transaction
+    $conn->begin_transaction();
+    
+    try {
+        // Check if client is used in contracts
+        $check_query = "SELECT COUNT(*) as count FROM contracts WHERE client_id = ?";
+        $check_result = execute_query($conn, $check_query, [$client_id]);
+        
+        if ($check_result['success'] && $check_result['data'][0]['count'] > 0) {
+            log_message("Client has related contracts, cannot delete", 'clients');
+            $conn->rollback();
+            
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Este cliente possui contratos relacionados e não pode ser excluído'
+            ]);
+            return;
+        }
+        
+        // Check if client is used in invoices
+        $check_query = "SELECT COUNT(*) as count FROM invoices WHERE client_id = ?";
+        $check_result = execute_query($conn, $check_query, [$client_id]);
+        
+        if ($check_result['success'] && $check_result['data'][0]['count'] > 0) {
+            log_message("Client has related invoices, cannot delete", 'clients');
+            $conn->rollback();
+            
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Este cliente possui faturas relacionadas e não pode ser excluído'
+            ]);
+            return;
+        }
+        
+        // Delete client
+        $query = "DELETE FROM clients WHERE id = ?";
+        $result = execute_query($conn, $query, [$client_id]);
+        
+        if ($result['success']) {
+            // Commit transaction
+            $conn->commit();
+            
+            log_message("Client deleted successfully", 'clients');
+            echo json_encode([
+                'success' => true,
+                'message' => 'Cliente excluído com sucesso'
+            ]);
+        } else {
+            throw new Exception("Falha ao excluir cliente: " . $conn->error);
+        }
+    } catch (Exception $e) {
+        // Rollback transaction
+        $conn->rollback();
+        
+        log_message("Error deleting client: " . $e->getMessage(), 'clients');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Erro ao excluir cliente: ' . $e->getMessage()
+        ]);
+    }
+}
+?>
