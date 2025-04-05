@@ -12,68 +12,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-// Function to log to a file
-function log_message($message) {
-    $log_file = __DIR__ . '/api_log.txt';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($log_file, "[$timestamp] [db-update.php] $message\n", FILE_APPEND);
-}
+// Include config file
+require_once __DIR__ . '/config.php';
 
-log_message("Database update requested");
+// Function to log to a file (already defined in config.php)
+// function log_message($message) {...}
 
-// Read connection parameters from environment variables
-$env_file = __DIR__ . '/../../.env';
-$db_config = array(
-    'host' => 'localhost',
-    'user' => 'root',
-    'password' => '',
-    'dbname' => 'faturamento',
-    'port' => 3306
-);
-
-// Try to read from .env file if it exists
-if (file_exists($env_file)) {
-    $env_content = file_get_contents($env_file);
-    $lines = explode("\n", $env_content);
-    
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-            list($key, $value) = explode('=', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
-            
-            if ($key === 'VITE_DB_HOST') $db_config['host'] = $value;
-            if ($key === 'VITE_DB_USER') $db_config['user'] = $value;
-            if ($key === 'VITE_DB_PASSWORD') $db_config['password'] = $value;
-            if ($key === 'VITE_DB_NAME') $db_config['dbname'] = $value;
-            if ($key === 'VITE_DB_PORT') $db_config['port'] = intval($value);
-        }
-    }
-}
+log_message("Database update requested", "db-update");
 
 try {
-    // Create connection
-    $conn = new mysqli(
-        $db_config['host'], 
-        $db_config['user'], 
-        $db_config['password'], 
-        $db_config['dbname'], 
-        $db_config['port']
-    );
-
-    // Check connection
-    if ($conn->connect_error) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Conexão falhou: ' . $conn->connect_error
-        ]);
-        log_message("Database connection failed: " . $conn->connect_error);
-        exit();
-    }
-    
-    // Set charset
-    $conn->set_charset("utf8mb4");
-    log_message("Connected to database successfully");
+    // Create connection using the function from config.php
+    $conn = create_db_connection();
+    log_message("Connected to database successfully", "db-update");
     
     // Read migration SQL file - check multiple possible locations
     $migration_file_paths = [
@@ -86,18 +36,27 @@ try {
     foreach ($migration_file_paths as $path) {
         if (file_exists($path)) {
             $migration_file = $path;
-            log_message("Found migration file at: " . $path);
+            log_message("Found migration file at: " . $path, "db-update");
             break;
         }
     }
     
     if (!$migration_file) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Arquivo de migração não encontrado. Verifique as seguintes localizações: ' . implode(', ', $migration_file_paths)
-        ]);
-        log_message("Migration file not found in any of the checked locations");
-        exit();
+        $errorPaths = implode(', ', $migration_file_paths);
+        log_message("Migration file not found in any of the checked locations: $errorPaths", "db-update");
+        
+        // Try to fix by copying from the current directory if available
+        if (file_exists(__DIR__ . '/migration_updates.sql')) {
+            // File is already in the current directory
+            $migration_file = __DIR__ . '/migration_updates.sql';
+            log_message("Using migration file from current directory", "db-update");
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Arquivo de migração não encontrado. Verifique as seguintes localizações: ' . $errorPaths
+            ]);
+            exit();
+        }
     }
     
     $migration_sql = file_get_contents($migration_file);
@@ -112,22 +71,23 @@ try {
         foreach ($queries as $query) {
             $query = trim($query);
             if (!empty($query)) {
-                log_message("Executing query: " . substr($query, 0, 100) . "...");
+                log_message("Executing query: " . substr($query, 0, 100) . "...", "db-update");
                 if ($conn->query($query)) {
                     $executed++;
+                    log_message("Query executed successfully", "db-update");
                 } else {
                     $errors[] = [
                         'query' => $query,
                         'error' => $conn->error
                     ];
-                    log_message("Query failed: " . $conn->error);
+                    log_message("Query failed: " . $conn->error, "db-update");
                 }
             }
         }
         
         if (empty($errors)) {
             $conn->commit();
-            log_message("Database update completed successfully. $executed queries executed.");
+            log_message("Database update completed successfully. $executed queries executed.", "db-update");
             
             echo json_encode([
                 'success' => true,
@@ -135,7 +95,7 @@ try {
             ]);
         } else {
             $conn->rollback();
-            log_message("Database update failed with errors.");
+            log_message("Database update failed with errors.", "db-update");
             
             echo json_encode([
                 'success' => false,
@@ -146,7 +106,7 @@ try {
         
     } catch (Exception $e) {
         $conn->rollback();
-        log_message("Exception during transaction: " . $e->getMessage());
+        log_message("Exception during transaction: " . $e->getMessage(), "db-update");
         
         echo json_encode([
             'success' => false,
@@ -157,7 +117,7 @@ try {
     $conn->close();
     
 } catch (Exception $e) {
-    log_message("Exception: " . $e->getMessage());
+    log_message("Exception: " . $e->getMessage(), "db-update");
     echo json_encode([
         'success' => false,
         'message' => 'Exceção: ' . $e->getMessage()

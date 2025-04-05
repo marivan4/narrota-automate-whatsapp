@@ -12,68 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-// Function to log to a file
-function log_message($message) {
-    $log_file = __DIR__ . '/api_log.txt';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($log_file, "[$timestamp] [clients.php] $message\n", FILE_APPEND);
-}
+// Include config file
+require_once __DIR__ . '/config.php';
 
-log_message("Client API requested - " . $_SERVER['REQUEST_METHOD']);
-
-// Read connection parameters from environment variables
-$env_file = __DIR__ . '/../../.env';
-$db_config = array(
-    'host' => 'localhost',
-    'user' => 'root',
-    'password' => '',
-    'dbname' => 'faturamento',
-    'port' => 3306
-);
-
-// Try to read from .env file if it exists
-if (file_exists($env_file)) {
-    $env_content = file_get_contents($env_file);
-    $lines = explode("\n", $env_content);
-    
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-            list($key, $value) = explode('=', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
-            
-            if ($key === 'VITE_DB_HOST') $db_config['host'] = $value;
-            if ($key === 'VITE_DB_USER') $db_config['user'] = $value;
-            if ($key === 'VITE_DB_PASSWORD') $db_config['password'] = $value;
-            if ($key === 'VITE_DB_NAME') $db_config['dbname'] = $value;
-            if ($key === 'VITE_DB_PORT') $db_config['port'] = intval($value);
-        }
-    }
-}
+log_message("Client API requested - " . $_SERVER['REQUEST_METHOD'], "clients");
 
 try {
-    // Create connection
-    $conn = new mysqli(
-        $db_config['host'], 
-        $db_config['user'], 
-        $db_config['password'], 
-        $db_config['dbname'], 
-        $db_config['port']
-    );
-
-    // Check connection
-    if ($conn->connect_error) {
-        log_message("Connection failed: " . $conn->connect_error);
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Conexão falhou: ' . $conn->connect_error
-        ]);
-        exit();
-    }
-    
-    // Set charset
-    $conn->set_charset("utf8mb4");
+    // Create connection using the function from config.php
+    $conn = create_db_connection();
     
     // Route based on request method
     switch ($_SERVER['REQUEST_METHOD']) {
@@ -83,6 +29,7 @@ try {
             
             if ($client_id) {
                 // Get specific client
+                log_message("Getting client with ID: $client_id", "clients");
                 $stmt = $conn->prepare("SELECT * FROM clients WHERE id = ?");
                 $stmt->bind_param("s", $client_id);
                 $stmt->execute();
@@ -97,6 +44,7 @@ try {
                 }
             } else {
                 // Get all clients
+                log_message("Getting all clients", "clients");
                 $result = $conn->query("SELECT * FROM clients ORDER BY name");
                 $clients = [];
                 
@@ -111,6 +59,7 @@ try {
         case 'POST':
             // Create a new client
             $data = json_decode(file_get_contents('php://input'), true);
+            log_message("Creating new client: " . json_encode($data), "clients");
             
             // Validate required fields
             if (!isset($data['name']) || !isset($data['email'])) {
@@ -135,6 +84,7 @@ try {
             
             if ($stmt->execute()) {
                 $new_id = $conn->insert_id;
+                log_message("Client created successfully with ID: $new_id", "clients");
                 echo json_encode([
                     'success' => true,
                     'message' => 'Cliente criado com sucesso',
@@ -142,7 +92,7 @@ try {
                 ]);
             } else {
                 http_response_code(500);
-                log_message("Create client failed: " . $conn->error);
+                log_message("Create client failed: " . $conn->error, "clients");
                 echo json_encode([
                     'success' => false,
                     'message' => 'Falha ao criar cliente: ' . $stmt->error
@@ -160,6 +110,8 @@ try {
                 echo json_encode(['message' => 'ID do cliente não fornecido']);
                 break;
             }
+            
+            log_message("Updating client ID: $client_id with data: " . json_encode($data), "clients");
             
             // Build update query dynamically based on provided fields
             $fields = [];
@@ -231,6 +183,7 @@ try {
             $values[] = $client_id;
             
             $query = "UPDATE clients SET " . implode(', ', $fields) . " WHERE id = ?";
+            log_message("Update query: $query", "clients");
             $stmt = $conn->prepare($query);
             
             // Create references array for bind_param
@@ -244,13 +197,14 @@ try {
             call_user_func_array(array($stmt, 'bind_param'), $refs);
             
             if ($stmt->execute()) {
+                log_message("Client updated successfully", "clients");
                 echo json_encode([
                     'success' => true,
                     'message' => 'Cliente atualizado com sucesso'
                 ]);
             } else {
                 http_response_code(500);
-                log_message("Update client failed: " . $conn->error);
+                log_message("Update client failed: " . $conn->error, "clients");
                 echo json_encode([
                     'success' => false,
                     'message' => 'Falha ao atualizar cliente: ' . $stmt->error
@@ -267,6 +221,8 @@ try {
                 echo json_encode(['message' => 'ID do cliente não fornecido']);
                 break;
             }
+            
+            log_message("Deleting client ID: $client_id", "clients");
             
             // Check if client exists
             $check = $conn->prepare("SELECT id FROM clients WHERE id = ?");
@@ -285,13 +241,14 @@ try {
             $stmt->bind_param("s", $client_id);
             
             if ($stmt->execute()) {
+                log_message("Client deleted successfully", "clients");
                 echo json_encode([
                     'success' => true,
                     'message' => 'Cliente excluído com sucesso'
                 ]);
             } else {
                 http_response_code(500);
-                log_message("Delete client failed: " . $conn->error);
+                log_message("Delete client failed: " . $conn->error, "clients");
                 echo json_encode([
                     'success' => false,
                     'message' => 'Falha ao excluir cliente: ' . $stmt->error
@@ -308,7 +265,7 @@ try {
     $conn->close();
     
 } catch (Exception $e) {
-    log_message("Exception: " . $e->getMessage());
+    log_message("Exception: " . $e->getMessage(), "clients");
     http_response_code(500);
     echo json_encode([
         'success' => false,

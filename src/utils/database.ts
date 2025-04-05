@@ -8,13 +8,13 @@ import { toast } from "sonner";
 export const DB_CONFIG = {
   host: import.meta.env.VITE_DB_HOST || "localhost",
   user: import.meta.env.VITE_DB_USER || "root",
-  password: import.meta.env.VITE_DB_PASSWORD || "",
+  password: import.meta.env.VITE_DB_PASSWORD || "Mari0307@", // Usando a senha dos seus logs
   database: import.meta.env.VITE_DB_NAME || "faturamento",
   port: parseInt(import.meta.env.VITE_DB_PORT || "3306")
 };
 
 // API URL configuration
-export const API_URL = import.meta.env.VITE_API_URL || '';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/faturamento/public';
 
 /**
  * Test database connection
@@ -138,10 +138,74 @@ export const initializeDatabase = async (): Promise<boolean> => {
       console.log("All required tables already exist");
     }
     
+    // Execute the database update script to make sure all tables are up-to-date
+    try {
+      console.log("Running database update script");
+      const updateResponse = await fetch(`${API_URL}/api/db-update.php`);
+      
+      if (updateResponse.ok) {
+        const updateResult = await updateResponse.json();
+        console.log("Database update result:", updateResult);
+        
+        if (updateResult.success) {
+          toast.success("Banco de dados atualizado com sucesso");
+        } else {
+          console.warn("Database update warning:", updateResult.message);
+        }
+      } else {
+        console.error("Database update failed:", updateResponse.status, updateResponse.statusText);
+      }
+    } catch (updateError) {
+      console.error("Database update error:", updateError);
+    }
+    
     return true;
   } catch (error) {
     console.error("Database initialization error:", error);
     toast.error("Erro ao inicializar banco de dados");
     return false;
+  }
+};
+
+/**
+ * Execute a database transaction with multiple queries
+ * @param queries Array of query objects with SQL and parameters
+ * @returns Promise resolving to the transaction results
+ */
+export const executeTransaction = async (queries: { sql: string; params: any[] }[]): Promise<any> => {
+  try {
+    if (!API_URL) {
+      toast.error("API URL não configurada. Configure a variável VITE_API_URL no arquivo .env");
+      throw new Error("API URL não configurada");
+    }
+    
+    console.log("Executing transaction with", queries.length, "queries");
+    
+    const response = await fetch(`${API_URL}/api/execute-transaction.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ queries })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Transaction execution failed:", response.status, response.statusText, errorText);
+      throw new Error(`Erro ao executar transação: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log("Transaction result:", result);
+    
+    if (!result.success) {
+      console.error("Transaction failed:", result.message);
+      throw new Error(result.message || "Erro ao executar transação");
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Transaction execution error:", error);
+    throw error;
   }
 };

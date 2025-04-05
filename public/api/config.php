@@ -32,7 +32,7 @@ function get_db_config() {
     $db_config = array(
         'host' => 'localhost',
         'user' => 'root',
-        'password' => '',
+        'password' => 'Mari0307@',  // Usando a senha dos seus logs
         'dbname' => 'faturamento',
         'port' => 3306
     );
@@ -65,6 +65,9 @@ function create_db_connection() {
     $db_config = get_db_config();
     
     try {
+        // Log the connection attempt
+        log_message("Attempting database connection with: host={$db_config['host']}, user={$db_config['user']}, db={$db_config['dbname']}");
+        
         // Create connection
         $conn = new mysqli(
             $db_config['host'], 
@@ -87,6 +90,7 @@ function create_db_connection() {
         
         // Set charset
         $conn->set_charset("utf8mb4");
+        log_message("Connection successful");
         
         return $conn;
     } catch (Exception $e) {
@@ -103,6 +107,10 @@ function create_db_connection() {
 // Function to prepare and execute a query with parameters
 function execute_query($conn, $query, $params = []) {
     try {
+        // Log the query
+        log_message("Executing query: " . $query);
+        log_message("With parameters: " . json_encode($params));
+        
         // Prepare the statement
         $stmt = $conn->prepare($query);
         
@@ -143,12 +151,13 @@ function execute_query($conn, $query, $params = []) {
         }
         
         // Execute the statement
-        $stmt->execute();
+        $result = $stmt->execute();
         
-        // Check for errors
-        if ($stmt->errno) {
+        if (!$result) {
             throw new Exception("Erro ao executar consulta: " . $stmt->error);
         }
+        
+        log_message("Query executed successfully");
         
         // Get result based on query type
         if (strtoupper(substr(trim($query), 0, 6)) === 'SELECT') {

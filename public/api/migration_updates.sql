@@ -72,6 +72,63 @@ CREATE TABLE IF NOT EXISTS checklist_items (
   FOREIGN KEY (checklist_id) REFERENCES checklists(id) ON DELETE CASCADE
 );
 
+-- Ensure clients table exists
+CREATE TABLE IF NOT EXISTS clients (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  phone VARCHAR(20),
+  document_id VARCHAR(50),
+  document_type VARCHAR(50),
+  address VARCHAR(255),
+  city VARCHAR(100),
+  state VARCHAR(50),
+  zip_code VARCHAR(20),
+  asaas_id VARCHAR(100),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Ensure contracts table exists
+CREATE TABLE IF NOT EXISTS contracts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  contract_number VARCHAR(50) NOT NULL,
+  client_id INT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  value DECIMAL(10,2) DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'active',
+  description TEXT,
+  payment_terms TEXT,
+  vehicle_id VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
+-- Ensure invoices table exists
+CREATE TABLE IF NOT EXISTS invoices (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_number VARCHAR(50) NOT NULL,
+  contract_id VARCHAR(50),
+  client_id INT,
+  issue_date DATE,
+  due_date DATE NOT NULL,
+  payment_date DATE,
+  amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  tax_amount DECIMAL(10,2) DEFAULT 0,
+  total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  discount DECIMAL(10,2) DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'pending',
+  payment_method VARCHAR(20),
+  payment_id VARCHAR(100),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
 -- Insert default admin user if not exists (password: admin123)
 INSERT INTO users (name, email, password, role)
 SELECT 'Admin User', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN'
