@@ -1,211 +1,218 @@
 
 <?php
-// API endpoint for invoices management
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json");
+/**
+ * API endpoint for invoices
+ */
 
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Include config and utilities
+// Include config file
 require_once __DIR__ . '/config.php';
 
-// Log request
-$request_method = $_SERVER['REQUEST_METHOD'];
-$request_path = $_SERVER['REQUEST_URI'];
-log_message("Received $request_method request to $request_path", 'invoices');
+// Setup CORS and required headers
+setup_cors();
+
+// Log the request
+log_message("Invoices API request: " . $_SERVER['REQUEST_METHOD'] . " " . json_encode($_GET), "invoices");
 
 try {
     // Create database connection
     $conn = create_db_connection();
-    log_message("Connected to database", 'invoices');
     
-    // Determine action based on HTTP method
-    switch ($request_method) {
+    // Determine request method and route based on HTTP method
+    $method = $_SERVER['REQUEST_METHOD'];
+    
+    switch ($method) {
         case 'GET':
-            handleGetInvoices($conn);
+            // Handle GET request (list or single)
+            if (isset($_GET['id'])) {
+                // Get single invoice
+                getInvoice($conn, $_GET['id']);
+            } else {
+                // Get all invoices
+                getAllInvoices($conn);
+            }
             break;
+            
         case 'POST':
-            handleCreateInvoice($conn);
+            // Handle POST request (create)
+            createInvoice($conn);
             break;
+            
         case 'PUT':
-            handleUpdateInvoice($conn);
+            // Handle PUT request (update)
+            updateInvoice($conn);
             break;
+            
         case 'DELETE':
-            handleDeleteInvoice($conn);
+            // Handle DELETE request (delete)
+            if (!isset($_GET['id'])) {
+                throw new Exception("ID is required for DELETE request");
+            }
+            deleteInvoice($conn, $_GET['id']);
             break;
+            
         default:
+            // Method not allowed
             http_response_code(405);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Método não permitido'
-            ]);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            break;
     }
     
+    // Close the connection
     $conn->close();
     
 } catch (Exception $e) {
-    log_message("Error: " . $e->getMessage(), 'invoices');
-    
+    log_message("Exception in invoices.php: " . $e->getMessage(), "invoices");
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Erro: ' . $e->getMessage()
+        'message' => 'Erro no servidor: ' . $e->getMessage()
     ]);
 }
 
-// Function to handle GET requests (list or get single invoice)
-function handleGetInvoices($conn) {
-    log_message("Handling GET request", 'invoices');
-    
-    // Check if ID is provided (get single invoice)
-    if (isset($_GET['id'])) {
-        $invoice_id = $_GET['id'];
-        log_message("Getting invoice with ID: $invoice_id", 'invoices');
-        
-        // Get invoice details
-        $invoice_query = "
-            SELECT i.*, 
-                   c.name as client_name, 
-                   c.email as client_email, 
-                   c.phone as client_phone,
-                   c.address as client_address,
-                   c.document as client_document
-            FROM invoices i 
-            LEFT JOIN clients c ON i.client_id = c.id
-            WHERE i.id = ?
+/**
+ * Get all invoices with client information
+ */
+function getAllInvoices($conn) {
+    try {
+        $query = "
+            SELECT 
+                i.*, 
+                c.name as client_name, 
+                c.email as client_email,
+                c.phone as client_phone,
+                c.document_id as client_document,
+                c.address as client_address,
+                c.city as client_city,
+                c.state as client_state,
+                c.zip_code as client_zipcode
+            FROM 
+                invoices i
+            LEFT JOIN 
+                clients c ON i.client_id = c.id
+            ORDER BY 
+                i.due_date DESC
         ";
         
-        try {
-            $invoice_result = execute_query($conn, $invoice_query, [$invoice_id]);
-            
-            if ($invoice_result['success'] && count($invoice_result['data']) > 0) {
-                $invoice = $invoice_result['data'][0];
+        $result = execute_query($conn, $query);
+        
+        if ($result['success']) {
+            // Fetch items for each invoice
+            foreach ($result['data'] as &$invoice) {
+                $invoice_id = $invoice['id'];
+                $items_query = "
+                    SELECT id, description, quantity, price
+                    FROM invoice_items 
+                    WHERE invoice_id = ?
+                ";
                 
-                // Get invoice items
-                $items_query = "SELECT * FROM invoice_items WHERE invoice_id = ?";
                 $items_result = execute_query($conn, $items_query, [$invoice_id]);
                 
-                $items = [];
-                if ($items_result['success'] && count($items_result['data']) > 0) {
-                    $items = $items_result['data'];
+                if ($items_result['success']) {
+                    $invoice['items'] = $items_result['data'];
                 }
-                
-                // Add items to invoice data
-                $invoice['items'] = $items;
-                
-                // Create client object
-                $invoice['client'] = [
-                    'id' => $invoice['client_id'],
-                    'name' => $invoice['client_name'] ?? '',
-                    'email' => $invoice['client_email'] ?? '',
-                    'phone' => $invoice['client_phone'] ?? '',
-                    'address' => $invoice['client_address'] ?? '',
-                    'document' => $invoice['client_document'] ?? '',
-                ];
-                
-                // Remove duplicate client fields
-                unset($invoice['client_name']);
-                unset($invoice['client_email']);
-                unset($invoice['client_phone']);
-                unset($invoice['client_address']);
-                unset($invoice['client_document']);
-                
-                echo json_encode($invoice);
-            } else {
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Fatura não encontrada'
-                ]);
             }
-        } catch (Exception $e) {
-            log_message("Error getting invoice: " . $e->getMessage(), 'invoices');
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Erro ao buscar fatura: ' . $e->getMessage()
-            ]);
-        }
-    } else {
-        // List all invoices
-        log_message("Listing all invoices", 'invoices');
-        
-        $query = "
-            SELECT i.*, 
-                   c.name as client_name, 
-                   c.email as client_email, 
-                   c.phone as client_phone
-            FROM invoices i 
-            LEFT JOIN clients c ON i.client_id = c.id
-            ORDER BY i.due_date DESC
-        ";
-        
-        try {
-            $result = execute_query($conn, $query);
             
-            if ($result['success']) {
-                echo json_encode($result['data']);
-            } else {
-                throw new Exception("Falha ao consultar faturas");
-            }
-        } catch (Exception $e) {
-            log_message("Error listing invoices: " . $e->getMessage(), 'invoices');
-            http_response_code(500);
             echo json_encode([
-                'success' => false,
-                'message' => 'Erro ao listar faturas: ' . $e->getMessage()
+                'success' => true,
+                'data' => $result['data']
             ]);
+        } else {
+            throw new Exception("Failed to fetch invoices: " . print_r($result, true));
         }
+    } catch (Exception $e) {
+        log_message("Error in getAllInvoices: " . $e->getMessage(), "invoices");
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error getting invoices: ' . $e->getMessage()
+        ]);
     }
 }
 
-// Function to handle POST requests (create invoice)
-function handleCreateInvoice($conn) {
-    log_message("Handling POST request", 'invoices');
-    
-    // Get JSON data from request
-    $json_data = file_get_contents('php://input');
-    $data = json_decode($json_data, true);
-    
-    if (!$data) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Dados JSON inválidos'
-        ]);
-        return;
-    }
-    
-    log_message("Creating invoice with data: " . json_encode($data), 'invoices');
-    
-    // Validate required fields
-    $required_fields = ['invoice_number', 'issue_date', 'due_date', 'amount'];
-    foreach ($required_fields as $field) {
-        if (!isset($data[$field]) || empty($data[$field])) {
-            http_response_code(400);
+/**
+ * Get a single invoice by ID
+ */
+function getInvoice($conn, $id) {
+    try {
+        $query = "
+            SELECT 
+                i.*, 
+                c.name as client_name, 
+                c.email as client_email,
+                c.phone as client_phone,
+                c.document_id as client_document,
+                c.address as client_address,
+                c.city as client_city,
+                c.state as client_state,
+                c.zip_code as client_zipcode
+            FROM 
+                invoices i
+            LEFT JOIN 
+                clients c ON i.client_id = c.id
+            WHERE 
+                i.id = ?
+        ";
+        
+        $result = execute_query($conn, $query, [$id]);
+        
+        if ($result['success'] && count($result['data']) > 0) {
+            $invoice = $result['data'][0];
+            
+            // Get invoice items
+            $items_query = "
+                SELECT id, description, quantity, price
+                FROM invoice_items 
+                WHERE invoice_id = ?
+            ";
+            
+            $items_result = execute_query($conn, $items_query, [$id]);
+            
+            if ($items_result['success']) {
+                $invoice['items'] = $items_result['data'];
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $invoice
+            ]);
+        } else {
+            http_response_code(404);
             echo json_encode([
                 'success' => false,
-                'message' => "Campo obrigatório não fornecido: $field"
+                'message' => 'Invoice not found'
             ]);
-            return;
         }
+    } catch (Exception $e) {
+        log_message("Error in getInvoice: " . $e->getMessage(), "invoices");
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error getting invoice: ' . $e->getMessage()
+        ]);
     }
-    
-    // Start transaction
-    $conn->begin_transaction();
-    
+}
+
+/**
+ * Create a new invoice
+ */
+function createInvoice($conn) {
     try {
-        // Insert invoice
+        // Get request body
+        $request_body = file_get_contents('php://input');
+        $data = json_decode($request_body, true);
+        
+        if (!$data) {
+            throw new Exception("Invalid request data");
+        }
+        
+        // Start transaction
+        $conn->begin_transaction();
+        
+        // Insert into invoices table
         $invoice_query = "
             INSERT INTO invoices (
-                invoice_number, contract_id, client_id, issue_date, due_date, 
-                payment_date, amount, tax_amount, total_amount, status, 
+                invoice_number, contract_id, client_id, issue_date, due_date,
+                amount, tax_amount, total_amount, status, payment_date,
                 payment_method, notes
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ";
@@ -216,118 +223,103 @@ function handleCreateInvoice($conn) {
             $data['client_id'] ?? null,
             $data['issue_date'],
             $data['due_date'],
-            $data['payment_date'] ?? null,
-            $data['amount'],
+            $data['amount'] ?? 0,
             $data['tax_amount'] ?? 0,
-            $data['total_amount'] ?? $data['amount'],
+            $data['total_amount'] ?? 0,
             $data['status'] ?? 'pending',
+            $data['payment_date'] ?? null,
             $data['payment_method'] ?? null,
             $data['notes'] ?? null
         ];
         
-        $invoice_result = execute_query($conn, $invoice_query, $invoice_params);
+        $result = execute_query($conn, $invoice_query, $invoice_params);
         
-        if ($invoice_result['success']) {
-            $invoice_id = $invoice_result['insertId'];
-            log_message("Created invoice with ID: $invoice_id", 'invoices');
-            
-            // If items are provided, insert them
-            if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
-                foreach ($data['items'] as $item) {
-                    $item_query = "
-                        INSERT INTO invoice_items (
-                            invoice_id, description, quantity, price
-                        ) VALUES (?, ?, ?, ?)
-                    ";
-                    
-                    $item_params = [
-                        $invoice_id,
-                        $item['description'],
-                        $item['quantity'] ?? 1,
-                        $item['price']
-                    ];
-                    
-                    $item_result = execute_query($conn, $item_query, $item_params);
-                    
-                    if (!$item_result['success']) {
-                        throw new Exception("Falha ao inserir item da fatura: " . $conn->error);
-                    }
+        if (!$result['success']) {
+            throw new Exception("Failed to create invoice: " . print_r($result, true));
+        }
+        
+        $invoice_id = $result['insertId'];
+        
+        // Insert invoice items if provided
+        if (isset($data['items']) && is_array($data['items']) && count($data['items']) > 0) {
+            foreach ($data['items'] as $item) {
+                $item_query = "
+                    INSERT INTO invoice_items (
+                        invoice_id, description, quantity, price
+                    ) VALUES (?, ?, ?, ?)
+                ";
+                
+                $item_params = [
+                    $invoice_id,
+                    $item['description'],
+                    $item['quantity'] ?? 1,
+                    $item['price'] ?? 0
+                ];
+                
+                $item_result = execute_query($conn, $item_query, $item_params);
+                
+                if (!$item_result['success']) {
+                    // Log error but continue with other items
+                    log_message("Failed to insert invoice item: " . print_r($item_result, true), "invoices");
                 }
             }
-            
-            // Commit transaction
-            $conn->commit();
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'Fatura criada com sucesso',
-                'id' => $invoice_id
-            ]);
-        } else {
-            throw new Exception("Falha ao inserir fatura: " . $conn->error);
         }
-    } catch (Exception $e) {
-        // Rollback transaction
-        $conn->rollback();
         
-        log_message("Error creating invoice: " . $e->getMessage(), 'invoices');
+        // Commit transaction
+        $conn->commit();
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Invoice created successfully',
+            'id' => $invoice_id
+        ]);
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        if (isset($conn) && $conn->ping()) {
+            $conn->rollback();
+        }
+        
+        log_message("Error in createInvoice: " . $e->getMessage(), "invoices");
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'message' => 'Erro ao criar fatura: ' . $e->getMessage()
+            'message' => 'Error creating invoice: ' . $e->getMessage()
         ]);
     }
 }
 
-// Function to handle PUT requests (update invoice)
-function handleUpdateInvoice($conn) {
-    log_message("Handling PUT request", 'invoices');
-    
-    // Get ID from query string
-    if (!isset($_GET['id'])) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'message' => 'ID da fatura não fornecido'
-        ]);
-        return;
-    }
-    
-    $invoice_id = $_GET['id'];
-    
-    // Get JSON data from request
-    $json_data = file_get_contents('php://input');
-    $data = json_decode($json_data, true);
-    
-    if (!$data) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Dados JSON inválidos'
-        ]);
-        return;
-    }
-    
-    log_message("Updating invoice $invoice_id with data: " . json_encode($data), 'invoices');
-    
-    // Start transaction
-    $conn->begin_transaction();
-    
+/**
+ * Update an existing invoice
+ */
+function updateInvoice($conn) {
     try {
+        // Get request body
+        $request_body = file_get_contents('php://input');
+        $data = json_decode($request_body, true);
+        
+        if (!$data || !isset($data['id'])) {
+            throw new Exception("Invalid request data or missing ID");
+        }
+        
+        $invoice_id = $data['id'];
+        
+        // Start transaction
+        $conn->begin_transaction();
+        
         // Update invoice
         $invoice_query = "
-            UPDATE invoices SET 
-                invoice_number = ?, 
-                contract_id = ?, 
+            UPDATE invoices SET
+                invoice_number = ?,
+                contract_id = ?,
                 client_id = ?,
-                issue_date = ?, 
-                due_date = ?, 
-                payment_date = ?,
-                amount = ?, 
-                tax_amount = ?, 
+                issue_date = ?,
+                due_date = ?,
+                amount = ?,
+                tax_amount = ?,
                 total_amount = ?,
-                status = ?, 
-                payment_method = ?, 
+                status = ?,
+                payment_date = ?,
+                payment_method = ?,
                 notes = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
@@ -339,127 +331,123 @@ function handleUpdateInvoice($conn) {
             $data['client_id'] ?? null,
             $data['issue_date'],
             $data['due_date'],
-            $data['payment_date'] ?? null,
-            $data['amount'],
+            $data['amount'] ?? 0,
             $data['tax_amount'] ?? 0,
-            $data['total_amount'] ?? $data['amount'],
+            $data['total_amount'] ?? 0,
             $data['status'] ?? 'pending',
+            $data['payment_date'] ?? null,
             $data['payment_method'] ?? null,
             $data['notes'] ?? null,
             $invoice_id
         ];
         
-        $invoice_result = execute_query($conn, $invoice_query, $invoice_params);
+        $result = execute_query($conn, $invoice_query, $invoice_params);
         
-        if ($invoice_result['success']) {
-            // Delete existing items
-            $delete_query = "DELETE FROM invoice_items WHERE invoice_id = ?";
-            $delete_result = execute_query($conn, $delete_query, [$invoice_id]);
-            
-            if (!$delete_result['success']) {
-                throw new Exception("Falha ao limpar itens da fatura: " . $conn->error);
-            }
-            
-            // If items are provided, insert them
-            if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
-                foreach ($data['items'] as $item) {
-                    $item_query = "
-                        INSERT INTO invoice_items (
-                            invoice_id, description, quantity, price
-                        ) VALUES (?, ?, ?, ?)
-                    ";
-                    
-                    $item_params = [
-                        $invoice_id,
-                        $item['description'],
-                        $item['quantity'] ?? 1,
-                        $item['price']
-                    ];
-                    
-                    $item_result = execute_query($conn, $item_query, $item_params);
-                    
-                    if (!$item_result['success']) {
-                        throw new Exception("Falha ao inserir item da fatura: " . $conn->error);
-                    }
+        if (!$result['success']) {
+            throw new Exception("Failed to update invoice: " . print_r($result, true));
+        }
+        
+        // Delete existing items to replace with new ones
+        $delete_items_query = "DELETE FROM invoice_items WHERE invoice_id = ?";
+        execute_query($conn, $delete_items_query, [$invoice_id]);
+        
+        // Insert invoice items if provided
+        if (isset($data['items']) && is_array($data['items']) && count($data['items']) > 0) {
+            foreach ($data['items'] as $item) {
+                $item_query = "
+                    INSERT INTO invoice_items (
+                        invoice_id, description, quantity, price
+                    ) VALUES (?, ?, ?, ?)
+                ";
+                
+                $item_params = [
+                    $invoice_id,
+                    $item['description'],
+                    $item['quantity'] ?? 1,
+                    $item['price'] ?? 0
+                ];
+                
+                $item_result = execute_query($conn, $item_query, $item_params);
+                
+                if (!$item_result['success']) {
+                    // Log error but continue with other items
+                    log_message("Failed to insert invoice item: " . print_r($item_result, true), "invoices");
                 }
             }
-            
-            // Commit transaction
-            $conn->commit();
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'Fatura atualizada com sucesso'
-            ]);
-        } else {
-            throw new Exception("Falha ao atualizar fatura: " . $conn->error);
         }
-    } catch (Exception $e) {
-        // Rollback transaction
-        $conn->rollback();
         
-        log_message("Error updating invoice: " . $e->getMessage(), 'invoices');
+        // Commit transaction
+        $conn->commit();
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Invoice updated successfully',
+            'id' => $invoice_id
+        ]);
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        if (isset($conn) && $conn->ping()) {
+            $conn->rollback();
+        }
+        
+        log_message("Error in updateInvoice: " . $e->getMessage(), "invoices");
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'message' => 'Erro ao atualizar fatura: ' . $e->getMessage()
+            'message' => 'Error updating invoice: ' . $e->getMessage()
         ]);
     }
 }
 
-// Function to handle DELETE requests
-function handleDeleteInvoice($conn) {
-    log_message("Handling DELETE request", 'invoices');
-    
-    // Get ID from query string
-    if (!isset($_GET['id'])) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'message' => 'ID da fatura não fornecido'
-        ]);
-        return;
-    }
-    
-    $invoice_id = $_GET['id'];
-    log_message("Deleting invoice with ID: $invoice_id", 'invoices');
-    
-    // Start transaction
-    $conn->begin_transaction();
-    
+/**
+ * Delete an invoice
+ */
+function deleteInvoice($conn, $id) {
     try {
-        // Delete items first (due to foreign key constraint)
-        $items_query = "DELETE FROM invoice_items WHERE invoice_id = ?";
-        $items_result = execute_query($conn, $items_query, [$invoice_id]);
+        // Start transaction
+        $conn->begin_transaction();
         
-        if (!$items_result['success']) {
-            throw new Exception("Falha ao excluir itens da fatura: " . $conn->error);
+        // Delete invoice items first (foreign key constraint)
+        $delete_items_query = "DELETE FROM invoice_items WHERE invoice_id = ?";
+        $items_result = execute_query($conn, $delete_items_query, [$id]);
+        
+        // Delete the invoice
+        $delete_invoice_query = "DELETE FROM invoices WHERE id = ?";
+        $invoice_result = execute_query($conn, $delete_invoice_query, [$id]);
+        
+        if (!$invoice_result['success']) {
+            throw new Exception("Failed to delete invoice: " . print_r($invoice_result, true));
         }
         
-        // Delete invoice
-        $invoice_query = "DELETE FROM invoices WHERE id = ?";
-        $invoice_result = execute_query($conn, $invoice_query, [$invoice_id]);
-        
-        if ($invoice_result['success']) {
-            // Commit transaction
-            $conn->commit();
-            
+        // Check if any rows were affected to determine if the invoice was found
+        if ($invoice_result['affectedRows'] === 0) {
+            $conn->rollback();
+            http_response_code(404);
             echo json_encode([
-                'success' => true,
-                'message' => 'Fatura excluída com sucesso'
+                'success' => false,
+                'message' => 'Invoice not found'
             ]);
-        } else {
-            throw new Exception("Falha ao excluir fatura: " . $conn->error);
+            return;
         }
-    } catch (Exception $e) {
-        // Rollback transaction
-        $conn->rollback();
         
-        log_message("Error deleting invoice: " . $e->getMessage(), 'invoices');
+        // Commit transaction
+        $conn->commit();
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Invoice deleted successfully'
+        ]);
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        if (isset($conn) && $conn->ping()) {
+            $conn->rollback();
+        }
+        
+        log_message("Error in deleteInvoice: " . $e->getMessage(), "invoices");
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'message' => 'Erro ao excluir fatura: ' . $e->getMessage()
+            'message' => 'Error deleting invoice: ' . $e->getMessage()
         ]);
     }
 }

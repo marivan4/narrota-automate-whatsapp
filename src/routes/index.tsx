@@ -1,194 +1,136 @@
 
 import React from 'react';
-import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom';
-import HomePage from '@/pages/HomePage';
-import Navbar from '@/components/layout/Navbar';
-import ClientsPage from '@/pages/Clients';
-import ContractsPage from '@/pages/Contracts';
-import InvoicesPage from '@/pages/Invoices';
-import SettingsPage from '@/pages/Settings';
-import HelpPage from '@/pages/Help';
-import NotFound from '@/pages/NotFound';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
-import WhatsAppSettings from '@/pages/WhatsAppSettings';
-import Checklists from '@/pages/Checklists';
-import Profile from '@/pages/Profile';
-import WhatsAppConnect from '@/pages/WhatsAppConnect';
-import InvoiceEdit from '@/pages/InvoiceEdit';
-import UsersManagement from '@/pages/UsersManagement';
-import Documentation from '@/pages/Documentation';
+import HomePage from '@/pages/HomePage';
+import NotFound from '@/pages/NotFound';
 import Login from '@/pages/Login';
-import { useAuth } from '@/contexts/AuthContext';
+import Settings from '@/pages/Settings';
+import Invoices from '@/pages/Invoices';
+import InvoiceEdit from '@/pages/InvoiceEdit';
+import InvoicePrint from '@/pages/InvoicePrint';
+import Clients from '@/pages/Clients';
+import Vehicles from '@/pages/Vehicles';
+import Contracts from '@/pages/Contracts';
+import UsersManagement from '@/pages/UsersManagement';
+import Profile from '@/pages/Profile';
+import Documentation from '@/pages/Documentation';
+import Help from '@/pages/Help';
+import WhatsAppSettings from '@/pages/WhatsAppSettings';
+import WhatsAppConnect from '@/pages/WhatsAppConnect';
+import ContractSignature from '@/pages/ContractSignature';
+import AsaasPaymentsList from '@/pages/AsaasPaymentsList';
+import AsaasPayments from '@/pages/AsaasPayments';
+import Reports from '@/pages/Reports';
+import Alerts from '@/pages/Alerts';
+import Appointments from '@/pages/Appointments';
+import Checklists from '@/pages/Checklists';
 
-// Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { authState } = useAuth();
-  
-  // If not authenticated, redirect to login
-  if (!authState.isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
-};
+// Define the router
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <HomePage />,
+  },
+  {
+    path: '/dashboard',
+    element: <Dashboard />,
+  },
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/settings',
+    element: <Settings />,
+  },
+  {
+    path: '/invoices',
+    element: <Invoices />,
+  },
+  {
+    path: '/invoices/edit/:id',
+    element: <InvoiceEdit />,
+  },
+  {
+    path: '/invoices/new',
+    element: <InvoiceEdit />,
+  },
+  {
+    path: '/invoices/print/:id',
+    element: <InvoicePrint />,
+  },
+  {
+    path: '/asaas-payments',
+    element: <AsaasPayments />,
+  },
+  {
+    path: '/asaas-payments-list',
+    element: <AsaasPaymentsList />,
+  },
+  {
+    path: '/clients',
+    element: <Clients />,
+  },
+  {
+    path: '/vehicles',
+    element: <Vehicles />,
+  },
+  {
+    path: '/contracts',
+    element: <Contracts />,
+  },
+  {
+    path: '/contract-signature/:id',
+    element: <ContractSignature />,
+  },
+  {
+    path: '/whatsapp',
+    element: <WhatsAppSettings />,
+  },
+  {
+    path: '/whatsapp/connect',
+    element: <WhatsAppConnect />,
+  },
+  {
+    path: '/reports',
+    element: <Reports />,
+  },
+  {
+    path: '/alerts',
+    element: <Alerts />,
+  },
+  {
+    path: '/appointments',
+    element: <Appointments />,
+  },
+  {
+    path: '/checklists',
+    element: <Checklists />,
+  },
+  {
+    path: '/users',
+    element: <UsersManagement />,
+  },
+  {
+    path: '/profile',
+    element: <Profile />,
+  },
+  {
+    path: '/docs',
+    element: <Documentation />,
+  },
+  {
+    path: '/help',
+    element: <Help />,
+  },
+  {
+    path: '*',
+    element: <NotFound />,
+  },
+]);
 
-const AppRoutes: React.FC = () => {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<Login />} />
-        
-        {/* Protected routes */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <Dashboard />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/clients" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <ClientsPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/contracts" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <ContractsPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/invoices" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <InvoicesPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/invoice-edit/:id" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <InvoiceEdit />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <SettingsPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/help" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <HelpPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <Profile />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/whatsapp-settings" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <WhatsAppSettings />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/whatsapp-connect" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <WhatsAppConnect />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/checklists" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <Checklists />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/users" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <UsersManagement />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/documentation" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <Documentation />
-              </main>
-            </div>
-          </ProtectedRoute>
-        } />
-        
-        {/* Fallback for 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
-  );
-};
-
-export default AppRoutes;
+// The main router component
+export default function Router() {
+  return <RouterProvider router={router} />;
+}

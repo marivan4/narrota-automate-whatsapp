@@ -52,12 +52,12 @@ CREATE TABLE IF NOT EXISTS clients (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(100) NOT NULL,
   phone VARCHAR(20),
-  document VARCHAR(50),
+  document_id VARCHAR(50),
   document_type VARCHAR(50),
   address VARCHAR(255),
   city VARCHAR(100),
   state VARCHAR(50),
-  zipCode VARCHAR(20),
+  zip_code VARCHAR(20),
   asaas_id VARCHAR(100),
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -210,8 +210,8 @@ FROM dual
 WHERE NOT EXISTS (SELECT * FROM users WHERE email = 'user@example.com');
 
 -- Add some test data if tables are empty
-INSERT INTO clients (name, email, phone, document, address, city, state)
-SELECT 'Cliente Teste', 'cliente@teste.com', '(11) 99999-9999', '123.456.789-00', 'Rua dos Testes, 123', 'São Paulo', 'SP'
+INSERT INTO clients (name, email, phone, document_id, address, city, state, zip_code)
+SELECT 'Cliente Teste', 'cliente@teste.com', '(11) 99999-9999', '123.456.789-00', 'Rua dos Testes, 123', 'São Paulo', 'SP', '01234-567'
 FROM dual
 WHERE NOT EXISTS (SELECT * FROM clients LIMIT 1);
 
