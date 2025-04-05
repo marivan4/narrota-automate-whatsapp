@@ -102,6 +102,30 @@ try {
             $conn->commit();
             log_message("Database update completed successfully. $executed queries executed.", "db-update");
             
+            // Verifique se a tabela invoice_items existe
+            $result = $conn->query("SHOW TABLES LIKE 'invoice_items'");
+            if ($result->num_rows == 0) {
+                // Crie a tabela invoice_items se não existir
+                $create_items_table = "
+                CREATE TABLE IF NOT EXISTS invoice_items (
+                  id INT AUTO_INCREMENT PRIMARY KEY,
+                  invoice_id INT NOT NULL,
+                  description VARCHAR(255) NOT NULL,
+                  quantity INT NOT NULL DEFAULT 1,
+                  price DECIMAL(10,2) NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+                )";
+                
+                if ($conn->query($create_items_table)) {
+                    log_message("Created invoice_items table", "db-update");
+                    $executed++;
+                } else {
+                    log_message("Failed to create invoice_items table: " . $conn->error, "db-update");
+                }
+            }
+            
             echo json_encode([
                 'success' => true,
                 'message' => "Banco de dados atualizado com sucesso. $executed consultas executadas."

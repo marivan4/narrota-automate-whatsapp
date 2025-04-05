@@ -1,6 +1,11 @@
 
 <?php
-// API endpoint for invoice operations
+/**
+ * API endpoint for invoices
+ * Handles CRUD operations for invoices
+ */
+
+// Setup headers and include configuration
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -12,467 +17,424 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
+// Include configuration file
+require_once __DIR__ . '/config.php';
+
 // Function to log to a file
-function log_message($message) {
-    $log_file = __DIR__ . '/api_log.txt';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($log_file, "[$timestamp] [invoices.php] $message\n", FILE_APPEND);
+function log_api($message) {
+    log_message($message, "invoices-api");
 }
 
-log_message("Invoice API requested - " . $_SERVER['REQUEST_METHOD']);
+// Get the request method and resource ID
+$method = $_SERVER['REQUEST_METHOD'];
+$id = null;
 
-// Read connection parameters from environment variables
-$env_file = __DIR__ . '/../../.env';
-$db_config = array(
-    'host' => 'localhost',
-    'user' => 'root',
-    'password' => '',
-    'dbname' => 'faturamento',
-    'port' => 3306
-);
+// Parse the URL to get the resource ID
+$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+$uri_parts = explode('/', trim(parse_url($request_uri, PHP_URL_PATH), '/'));
+$resource_index = array_search('invoices', $uri_parts);
 
-// Try to read from .env file if it exists
-if (file_exists($env_file)) {
-    $env_content = file_get_contents($env_file);
-    $lines = explode("\n", $env_content);
-    
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-            list($key, $value) = explode('=', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
-            
-            if ($key === 'VITE_DB_HOST') $db_config['host'] = $value;
-            if ($key === 'VITE_DB_USER') $db_config['user'] = $value;
-            if ($key === 'VITE_DB_PASSWORD') $db_config['password'] = $value;
-            if ($key === 'VITE_DB_NAME') $db_config['dbname'] = $value;
-            if ($key === 'VITE_DB_PORT') $db_config['port'] = intval($value);
-        }
-    }
+// Check if ID is provided in the URL
+if ($resource_index !== false && isset($uri_parts[$resource_index + 1])) {
+    $id = $uri_parts[$resource_index + 1];
 }
+
+// Log request details
+log_api("Received {$method} request" . ($id ? " for invoice ID: {$id}" : ""));
 
 try {
     // Create connection
-    $conn = new mysqli(
-        $db_config['host'], 
-        $db_config['user'], 
-        $db_config['password'], 
-        $db_config['dbname'], 
-        $db_config['port']
-    );
+    $conn = create_db_connection();
+    log_api("Connected to database successfully");
 
-    // Check connection
-    if ($conn->connect_error) {
-        log_message("Connection failed: " . $conn->connect_error);
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Conexão falhou: ' . $conn->connect_error
-        ]);
-        exit();
-    }
-    
-    // Set charset
-    $conn->set_charset("utf8mb4");
-    
-    // Parse the URL path to extract ID parameter if not in query string
-    $path_parts = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
-    $api_endpoint = end($path_parts);
-    
-    // If path has ID (format: /api/invoices/123)
-    if (is_numeric($api_endpoint)) {
-        $_GET['id'] = $api_endpoint;
-    }
-    
-    // Route based on request method
-    switch ($_SERVER['REQUEST_METHOD']) {
+    // Process based on HTTP method
+    switch ($method) {
         case 'GET':
-            // Check if requesting a specific invoice
-            $invoice_id = isset($_GET['id']) ? $_GET['id'] : null;
-            
-            if ($invoice_id) {
-                // Get specific invoice with related data
-                $query = "SELECT i.*, c.name as client_name, c.email as client_email, 
-                          ct.contract_number
-                          FROM invoices i 
-                          LEFT JOIN clients c ON i.client_id = c.id 
-                          LEFT JOIN contracts ct ON i.contract_id = ct.id
-                          WHERE i.id = ?";
+            // Retrieve invoice(s)
+            if ($id) {
+                // Get single invoice
+                $query = "SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone 
+                        FROM invoices i 
+                        LEFT JOIN clients c ON i.client_id = c.id 
+                        WHERE i.id = ?";
+                log_api("Executing query to retrieve invoice with ID: {$id}");
+                
                 $stmt = $conn->prepare($query);
-                $stmt->bind_param("s", $invoice_id);
+                $stmt->bind_param("s", $id);
                 $stmt->execute();
                 $result = $stmt->get_result();
                 
                 if ($result->num_rows > 0) {
                     $invoice = $result->fetch_assoc();
                     
-                    // Get invoice items if needed
+                    // Also get invoice items if they exist
                     $items_query = "SELECT * FROM invoice_items WHERE invoice_id = ?";
                     $items_stmt = $conn->prepare($items_query);
-                    $items_stmt->bind_param("s", $invoice_id);
+                    $items_stmt->bind_param("s", $id);
                     $items_stmt->execute();
                     $items_result = $items_stmt->get_result();
                     
-                    $items = [];
+                    $invoice['items'] = [];
                     while ($item = $items_result->fetch_assoc()) {
-                        $items[] = $item;
+                        $invoice['items'][] = $item;
                     }
                     
-                    $invoice['items'] = $items;
+                    log_api("Invoice found and returned");
                     echo json_encode($invoice);
                 } else {
+                    log_api("Invoice not found");
                     http_response_code(404);
-                    echo json_encode(['message' => 'Fatura não encontrada']);
+                    echo json_encode(["message" => "Fatura não encontrada"]);
                 }
             } else {
-                // Get all invoices with client names
-                $query = "SELECT i.*, c.name as client_name, c.email as client_email
-                          FROM invoices i 
-                          LEFT JOIN clients c ON i.client_id = c.id 
-                          ORDER BY i.due_date DESC";
+                // Get all invoices
+                $query = "SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone 
+                        FROM invoices i 
+                        LEFT JOIN clients c ON i.client_id = c.id 
+                        ORDER BY i.due_date DESC";
+                log_api("Executing query to retrieve all invoices");
+                
                 $result = $conn->query($query);
                 $invoices = [];
                 
-                while ($row = $result->fetch_assoc()) {
-                    $invoices[] = $row;
+                if ($result && $result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        $invoices[] = $row;
+                    }
                 }
                 
+                log_api("Returned " . count($invoices) . " invoices");
                 echo json_encode($invoices);
             }
             break;
             
         case 'POST':
-            // Create a new invoice
-            $data = json_decode(file_get_contents('php://input'), true);
+            // Create new invoice
+            $data = json_decode(file_get_contents("php://input"), true);
+            log_api("Received data for new invoice: " . json_encode($data));
             
-            // Validate required fields
-            if (!isset($data['invoice_number']) || !isset($data['contract_id']) || !isset($data['amount'])) {
+            if (!$data) {
+                log_api("Invalid data received");
                 http_response_code(400);
-                echo json_encode(['message' => 'Campos obrigatórios não fornecidos']);
+                echo json_encode(["message" => "Dados inválidos"]);
                 break;
             }
-            
-            // Format dates
-            $issue_date = isset($data['issue_date']) ? date('Y-m-d', strtotime($data['issue_date'])) : date('Y-m-d');
-            $due_date = isset($data['due_date']) ? date('Y-m-d', strtotime($data['due_date'])) : null;
-            $payment_date = isset($data['payment_date']) ? date('Y-m-d', strtotime($data['payment_date'])) : null;
-            
-            // Calculate total_amount
-            $amount = floatval($data['amount']);
-            $tax_amount = isset($data['tax_amount']) ? floatval($data['tax_amount']) : 0;
-            $total_amount = $amount + $tax_amount;
             
             // Begin transaction
             $conn->begin_transaction();
             
             try {
-                // Insert new invoice
-                $stmt = $conn->prepare("INSERT INTO invoices (
-                    invoice_number, contract_id, client_id, issue_date, due_date, amount, tax_amount, 
-                    total_amount, status, payment_method, payment_date, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                // Insert invoice
+                $insert_query = "INSERT INTO invoices (
+                    invoice_number, contract_id, client_id, issue_date, due_date, 
+                    payment_date, amount, tax_amount, total_amount, discount, 
+                    status, payment_method, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
-                $status = isset($data['status']) ? $data['status'] : 'pendente';
-                $payment_method = isset($data['payment_method']) ? $data['payment_method'] : null;
+                $stmt = $conn->prepare($insert_query);
                 
-                $stmt->bind_param("sssssdddssss", 
+                // Set default values if not provided
+                $data['tax_amount'] = $data['tax_amount'] ?? 0;
+                $data['discount'] = $data['discount'] ?? 0;
+                $data['total_amount'] = $data['amount'] + $data['tax_amount'] - $data['discount'];
+                
+                // Format dates
+                $issue_date = isset($data['issue_date']) ? date('Y-m-d', strtotime($data['issue_date'])) : date('Y-m-d');
+                $due_date = isset($data['due_date']) ? date('Y-m-d', strtotime($data['due_date'])) : date('Y-m-d');
+                $payment_date = isset($data['payment_date']) ? date('Y-m-d', strtotime($data['payment_date'])) : null;
+                
+                // Prepare parameters
+                $stmt->bind_param(
+                    "ssisssddddss",
                     $data['invoice_number'],
                     $data['contract_id'],
-                    $data['client_id'] ?? null,
+                    $data['client_id'],
                     $issue_date,
                     $due_date,
-                    $amount,
-                    $tax_amount,
-                    $total_amount,
-                    $status,
-                    $payment_method,
                     $payment_date,
-                    $data['notes'] ?? null
+                    $data['amount'],
+                    $data['tax_amount'],
+                    $data['total_amount'],
+                    $data['discount'],
+                    $data['status'],
+                    $data['payment_method'],
+                    $data['notes']
                 );
                 
-                if (!$stmt->execute()) {
-                    throw new Exception("Erro ao criar fatura: " . $stmt->error);
-                }
-                
-                $new_id = $conn->insert_id;
-                
-                // Add invoice items if provided
-                if (isset($data['items']) && is_array($data['items'])) {
-                    $item_stmt = $conn->prepare("INSERT INTO invoice_items (
-                        invoice_id, description, quantity, unit_price, amount
-                    ) VALUES (?, ?, ?, ?, ?)");
+                // Execute query
+                if ($stmt->execute()) {
+                    $invoice_id = $conn->insert_id;
                     
-                    foreach ($data['items'] as $item) {
-                        $item_amount = floatval($item['quantity']) * floatval($item['unit_price']);
+                    // Insert invoice items if provided
+                    if (isset($data['items']) && is_array($data['items'])) {
+                        $item_query = "INSERT INTO invoice_items (
+                            invoice_id, description, quantity, price
+                        ) VALUES (?, ?, ?, ?)";
                         
-                        $item_stmt->bind_param("isddd",
-                            $new_id,
-                            $item['description'],
-                            $item['quantity'],
-                            $item['unit_price'],
-                            $item_amount
-                        );
+                        $item_stmt = $conn->prepare($item_query);
                         
-                        if (!$item_stmt->execute()) {
-                            throw new Exception("Erro ao adicionar item da fatura: " . $item_stmt->error);
+                        foreach ($data['items'] as $item) {
+                            $item_stmt->bind_param(
+                                "isid",
+                                $invoice_id,
+                                $item['description'],
+                                $item['quantity'],
+                                $item['price']
+                            );
+                            
+                            if (!$item_stmt->execute()) {
+                                throw new Exception("Erro ao inserir item: " . $item_stmt->error);
+                            }
                         }
                     }
+                    
+                    // Commit transaction
+                    $conn->commit();
+                    
+                    // Get the created invoice
+                    $query = "SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone 
+                            FROM invoices i 
+                            LEFT JOIN clients c ON i.client_id = c.id 
+                            WHERE i.id = ?";
+                    
+                    $stmt = $conn->prepare($query);
+                    $stmt->bind_param("i", $invoice_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $invoice = $result->fetch_assoc();
+                    
+                    // Also get invoice items
+                    $items_query = "SELECT * FROM invoice_items WHERE invoice_id = ?";
+                    $items_stmt = $conn->prepare($items_query);
+                    $items_stmt->bind_param("i", $invoice_id);
+                    $items_stmt->execute();
+                    $items_result = $items_stmt->get_result();
+                    
+                    $invoice['items'] = [];
+                    while ($item = $items_result->fetch_assoc()) {
+                        $invoice['items'][] = $item;
+                    }
+                    
+                    log_api("Invoice created successfully with ID: {$invoice_id}");
+                    http_response_code(201);
+                    echo json_encode($invoice);
+                    
+                } else {
+                    throw new Exception("Erro ao inserir fatura: " . $stmt->error);
                 }
                 
-                // Commit the transaction
-                $conn->commit();
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Fatura criada com sucesso',
-                    'id' => $new_id
-                ]);
-                
             } catch (Exception $e) {
-                // Rollback in case of error
+                // Rollback transaction on error
                 $conn->rollback();
+                log_api("Error: " . $e->getMessage());
                 http_response_code(500);
-                log_message("Create invoice failed: " . $e->getMessage());
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Falha ao criar fatura: ' . $e->getMessage()
-                ]);
+                echo json_encode(["message" => "Erro ao criar fatura: " . $e->getMessage()]);
             }
             break;
             
         case 'PUT':
-            // Update an existing invoice
-            $data = json_decode(file_get_contents('php://input'), true);
-            $invoice_id = isset($_GET['id']) ? $_GET['id'] : null;
-            
-            if (!$invoice_id) {
+            // Update invoice
+            if (!$id) {
+                log_api("ID not provided for update");
                 http_response_code(400);
-                echo json_encode(['message' => 'ID da fatura não fornecido']);
+                echo json_encode(["message" => "ID da fatura não fornecido"]);
                 break;
             }
             
-            // Format dates if provided
-            if (isset($data['issue_date'])) {
-                $data['issue_date'] = date('Y-m-d', strtotime($data['issue_date']));
-            }
+            $data = json_decode(file_get_contents("php://input"), true);
+            log_api("Received data for updating invoice {$id}: " . json_encode($data));
             
-            if (isset($data['due_date'])) {
-                $data['due_date'] = date('Y-m-d', strtotime($data['due_date']));
-            }
-            
-            if (isset($data['payment_date'])) {
-                $data['payment_date'] = !empty($data['payment_date']) ? 
-                    date('Y-m-d', strtotime($data['payment_date'])) : null;
-            }
-            
-            // Calculate total_amount if amount or tax_amount provided
-            if (isset($data['amount']) || isset($data['tax_amount'])) {
-                // Get current values if not provided
-                if (!isset($data['amount']) || !isset($data['tax_amount'])) {
-                    $query = "SELECT amount, tax_amount FROM invoices WHERE id = ?";
-                    $stmt = $conn->prepare($query);
-                    $stmt->bind_param("s", $invoice_id);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    $current = $result->fetch_assoc();
-                    
-                    if (!isset($data['amount'])) {
-                        $data['amount'] = $current['amount'];
-                    }
-                    
-                    if (!isset($data['tax_amount'])) {
-                        $data['tax_amount'] = $current['tax_amount'];
-                    }
-                }
-                
-                $data['total_amount'] = floatval($data['amount']) + floatval($data['tax_amount']);
+            if (!$data) {
+                log_api("Invalid data received");
+                http_response_code(400);
+                echo json_encode(["message" => "Dados inválidos"]);
+                break;
             }
             
             // Begin transaction
             $conn->begin_transaction();
             
             try {
-                // Build update query dynamically based on provided fields
-                $fields = [];
-                $types = '';
-                $values = [];
+                // Update invoice
+                $update_query = "UPDATE invoices SET 
+                    invoice_number = ?,
+                    contract_id = ?,
+                    client_id = ?,
+                    issue_date = ?,
+                    due_date = ?,
+                    payment_date = ?,
+                    amount = ?,
+                    tax_amount = ?,
+                    total_amount = ?,
+                    discount = ?,
+                    status = ?,
+                    payment_method = ?,
+                    notes = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?";
                 
-                $field_types = [
-                    'invoice_number' => 's',
-                    'contract_id' => 's',
-                    'client_id' => 's',
-                    'issue_date' => 's',
-                    'due_date' => 's',
-                    'amount' => 'd',
-                    'tax_amount' => 'd',
-                    'total_amount' => 'd',
-                    'status' => 's',
-                    'payment_method' => 's',
-                    'payment_date' => 's',
-                    'notes' => 's'
-                ];
+                $stmt = $conn->prepare($update_query);
                 
-                foreach ($field_types as $field => $type) {
-                    if (isset($data[$field])) {
-                        $fields[] = "$field = ?";
-                        $types .= $type;
-                        $values[] = $data[$field];
+                // Set default values if not provided
+                $data['tax_amount'] = $data['tax_amount'] ?? 0;
+                $data['discount'] = $data['discount'] ?? 0;
+                $data['total_amount'] = $data['amount'] + $data['tax_amount'] - $data['discount'];
+                
+                // Format dates
+                $issue_date = isset($data['issue_date']) ? date('Y-m-d', strtotime($data['issue_date'])) : date('Y-m-d');
+                $due_date = isset($data['due_date']) ? date('Y-m-d', strtotime($data['due_date'])) : date('Y-m-d');
+                $payment_date = isset($data['payment_date']) ? date('Y-m-d', strtotime($data['payment_date'])) : null;
+                
+                // Prepare parameters
+                $stmt->bind_param(
+                    "ssisssddddssi",
+                    $data['invoice_number'],
+                    $data['contract_id'],
+                    $data['client_id'],
+                    $issue_date,
+                    $due_date,
+                    $payment_date,
+                    $data['amount'],
+                    $data['tax_amount'],
+                    $data['total_amount'],
+                    $data['discount'],
+                    $data['status'],
+                    $data['payment_method'],
+                    $data['notes'],
+                    $id
+                );
+                
+                // Execute query
+                if ($stmt->execute()) {
+                    // If items are provided, update them
+                    if (isset($data['items']) && is_array($data['items'])) {
+                        // First delete existing items
+                        $delete_items = "DELETE FROM invoice_items WHERE invoice_id = ?";
+                        $delete_stmt = $conn->prepare($delete_items);
+                        $delete_stmt->bind_param("i", $id);
+                        $delete_stmt->execute();
+                        
+                        // Then insert new items
+                        $item_query = "INSERT INTO invoice_items (
+                            invoice_id, description, quantity, price
+                        ) VALUES (?, ?, ?, ?)";
+                        
+                        $item_stmt = $conn->prepare($item_query);
+                        
+                        foreach ($data['items'] as $item) {
+                            $item_stmt->bind_param(
+                                "isid",
+                                $id,
+                                $item['description'],
+                                $item['quantity'],
+                                $item['price']
+                            );
+                            
+                            if (!$item_stmt->execute()) {
+                                throw new Exception("Erro ao inserir item: " . $item_stmt->error);
+                            }
+                        }
                     }
-                }
-                
-                if (empty($fields)) {
-                    throw new Exception("Nenhum campo para atualizar");
-                }
-                
-                // Add ID to values array and types
-                $types .= 's';
-                $values[] = $invoice_id;
-                
-                $query = "UPDATE invoices SET " . implode(', ', $fields) . " WHERE id = ?";
-                $stmt = $conn->prepare($query);
-                
-                // Create references array for bind_param
-                $refs = array();
-                $refs[] = $types;
-                
-                for ($i = 0; $i < count($values); $i++) {
-                    $refs[] = &$values[$i];
-                }
-                
-                call_user_func_array(array($stmt, 'bind_param'), $refs);
-                
-                if (!$stmt->execute()) {
+                    
+                    // Commit transaction
+                    $conn->commit();
+                    
+                    // Get the updated invoice
+                    $query = "SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone 
+                            FROM invoices i 
+                            LEFT JOIN clients c ON i.client_id = c.id 
+                            WHERE i.id = ?";
+                    
+                    $stmt = $conn->prepare($query);
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $invoice = $result->fetch_assoc();
+                    
+                    // Also get invoice items
+                    $items_query = "SELECT * FROM invoice_items WHERE invoice_id = ?";
+                    $items_stmt = $conn->prepare($items_query);
+                    $items_stmt->bind_param("i", $id);
+                    $items_stmt->execute();
+                    $items_result = $items_stmt->get_result();
+                    
+                    $invoice['items'] = [];
+                    while ($item = $items_result->fetch_assoc()) {
+                        $invoice['items'][] = $item;
+                    }
+                    
+                    log_api("Invoice updated successfully");
+                    echo json_encode($invoice);
+                    
+                } else {
                     throw new Exception("Erro ao atualizar fatura: " . $stmt->error);
                 }
                 
-                // Update items if provided
-                if (isset($data['items']) && is_array($data['items'])) {
-                    // Delete existing items
-                    $delete_stmt = $conn->prepare("DELETE FROM invoice_items WHERE invoice_id = ?");
-                    $delete_stmt->bind_param("s", $invoice_id);
-                    
-                    if (!$delete_stmt->execute()) {
-                        throw new Exception("Erro ao remover itens antigos: " . $delete_stmt->error);
-                    }
-                    
-                    // Add new items
-                    $item_stmt = $conn->prepare("INSERT INTO invoice_items (
-                        invoice_id, description, quantity, unit_price, amount
-                    ) VALUES (?, ?, ?, ?, ?)");
-                    
-                    foreach ($data['items'] as $item) {
-                        $item_amount = floatval($item['quantity']) * floatval($item['unit_price']);
-                        
-                        $item_stmt->bind_param("isddd",
-                            $invoice_id,
-                            $item['description'],
-                            $item['quantity'],
-                            $item['unit_price'],
-                            $item_amount
-                        );
-                        
-                        if (!$item_stmt->execute()) {
-                            throw new Exception("Erro ao adicionar item da fatura: " . $item_stmt->error);
-                        }
-                    }
-                }
-                
-                // Commit the transaction
-                $conn->commit();
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Fatura atualizada com sucesso'
-                ]);
-                
             } catch (Exception $e) {
-                // Rollback in case of error
+                // Rollback transaction on error
                 $conn->rollback();
+                log_api("Error: " . $e->getMessage());
                 http_response_code(500);
-                log_message("Update invoice failed: " . $e->getMessage());
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Falha ao atualizar fatura: ' . $e->getMessage()
-                ]);
+                echo json_encode(["message" => "Erro ao atualizar fatura: " . $e->getMessage()]);
             }
             break;
             
         case 'DELETE':
-            // Delete an invoice
-            $invoice_id = isset($_GET['id']) ? $_GET['id'] : null;
-            
-            if (!$invoice_id) {
+            // Delete invoice
+            if (!$id) {
+                log_api("ID not provided for deletion");
                 http_response_code(400);
-                echo json_encode(['message' => 'ID da fatura não fornecido']);
+                echo json_encode(["message" => "ID da fatura não fornecido"]);
                 break;
             }
             
-            // Check if invoice exists
-            $check = $conn->prepare("SELECT id FROM invoices WHERE id = ?");
-            $check->bind_param("s", $invoice_id);
-            $check->execute();
-            $result = $check->get_result();
-            
-            if ($result->num_rows === 0) {
-                http_response_code(404);
-                echo json_encode(['message' => 'Fatura não encontrada']);
-                break;
-            }
+            log_api("Attempting to delete invoice with ID: {$id}");
             
             // Begin transaction
             $conn->begin_transaction();
             
             try {
-                // Delete invoice items first
-                $item_stmt = $conn->prepare("DELETE FROM invoice_items WHERE invoice_id = ?");
-                $item_stmt->bind_param("s", $invoice_id);
+                // First delete related invoice items
+                $delete_items = "DELETE FROM invoice_items WHERE invoice_id = ?";
+                $delete_items_stmt = $conn->prepare($delete_items);
+                $delete_items_stmt->bind_param("i", $id);
+                $delete_items_stmt->execute();
                 
-                if (!$item_stmt->execute()) {
-                    throw new Exception("Erro ao remover itens da fatura: " . $item_stmt->error);
-                }
+                // Then delete the invoice
+                $delete_query = "DELETE FROM invoices WHERE id = ?";
+                $stmt = $conn->prepare($delete_query);
+                $stmt->bind_param("i", $id);
                 
-                // Delete the invoice
-                $stmt = $conn->prepare("DELETE FROM invoices WHERE id = ?");
-                $stmt->bind_param("s", $invoice_id);
-                
-                if (!$stmt->execute()) {
+                if ($stmt->execute()) {
+                    // Commit transaction
+                    $conn->commit();
+                    log_api("Invoice deleted successfully");
+                    echo json_encode(["message" => "Fatura excluída com sucesso"]);
+                } else {
                     throw new Exception("Erro ao excluir fatura: " . $stmt->error);
                 }
                 
-                // Commit the transaction
-                $conn->commit();
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Fatura excluída com sucesso'
-                ]);
-                
             } catch (Exception $e) {
-                // Rollback in case of error
+                // Rollback transaction on error
                 $conn->rollback();
+                log_api("Error: " . $e->getMessage());
                 http_response_code(500);
-                log_message("Delete invoice failed: " . $e->getMessage());
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Falha ao excluir fatura: ' . $e->getMessage()
-                ]);
+                echo json_encode(["message" => "Erro ao excluir fatura: " . $e->getMessage()]);
             }
             break;
             
         default:
+            log_api("Method not allowed: {$method}");
             http_response_code(405);
-            echo json_encode(['message' => 'Método não permitido']);
+            echo json_encode(["message" => "Método não permitido"]);
             break;
     }
     
+    // Close connection
     $conn->close();
     
 } catch (Exception $e) {
-    log_message("Exception: " . $e->getMessage());
+    log_api("Exception: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Exceção: ' . $e->getMessage()
-    ]);
+    echo json_encode(["message" => "Erro de servidor: " . $e->getMessage()]);
 }
-?>

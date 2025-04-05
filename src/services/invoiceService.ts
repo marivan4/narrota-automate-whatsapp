@@ -1,4 +1,3 @@
-
 // Import from the new path
 import { asaasService } from '@/services/asaas';
 import { InvoiceFormData } from '@/models/invoice';
@@ -15,15 +14,40 @@ export const invoiceService = {
     try {
       console.log("Buscando faturas, API_URL configurada:", API_URL ? "Sim" : "Não");
       
-      // Check if API_URL is configured, otherwise try database connection
+      // Verificar se a API_URL está configurada, caso contrário, tentar conexão direta com o banco
       if (!API_URL) {
         console.log("API URL not configured, checking database connection");
         try {
-          // Try database connection directly if API_URL is not available
-          const queryResult = await executeQuery("SELECT * FROM invoices ORDER BY due_date DESC");
+          // Tentar conexão direta com o banco se a API_URL não estiver disponível
+          const queryResult = await executeQuery("SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone FROM invoices i LEFT JOIN clients c ON i.client_id = c.id ORDER BY i.due_date DESC");
           console.log("Resultado da consulta ao banco de dados:", queryResult);
+          
           if (queryResult && queryResult.data) {
-            return queryResult.data;
+            // Transformar os dados do banco para o formato esperado pela aplicação
+            return queryResult.data.map((row: any) => ({
+              id: row.id.toString(),
+              invoice_number: row.invoice_number,
+              contract_id: row.contract_id,
+              issue_date: new Date(row.issue_date),
+              due_date: new Date(row.due_date),
+              payment_date: row.payment_date ? new Date(row.payment_date) : undefined,
+              amount: parseFloat(row.amount),
+              tax_amount: parseFloat(row.tax_amount || 0),
+              total_amount: parseFloat(row.total_amount),
+              subtotal: parseFloat(row.amount),
+              discount: parseFloat(row.discount || 0),
+              status: row.status,
+              payment_method: row.payment_method,
+              client: {
+                id: row.client_id?.toString() || '',
+                name: row.client_name || '',
+                email: row.client_email || '',
+                phone: row.client_phone || ''
+              },
+              items: [],
+              created_at: new Date(row.created_at),
+              updated_at: new Date(row.updated_at)
+            }));
           }
           throw new Error('Não foi possível obter dados de faturas do banco de dados');
         } catch (dbError) {
@@ -33,18 +57,50 @@ export const invoiceService = {
         }
       }
       
-      // If API_URL is configured, try to fetch from API
-      const response = await fetch(`${API_URL}/api/invoices`);
+      // Se a API_URL estiver configurada, tentar buscar na API
+      const response = await fetch(`${API_URL}/api/invoices.php`);
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         console.error(`API Error: ${response.status} ${response.statusText}`, errorText);
         throw new Error(`Falha ao buscar faturas: ${response.status} ${response.statusText}`);
       }
-      return await response.json();
+      
+      const data = await response.json();
+      if (data && Array.isArray(data)) {
+        // Transformar os dados da API para o formato esperado pela aplicação
+        return data.map((invoice: any) => ({
+          id: invoice.id.toString(),
+          invoice_number: invoice.invoice_number,
+          contract_id: invoice.contract_id,
+          issue_date: new Date(invoice.issue_date),
+          due_date: new Date(invoice.due_date),
+          payment_date: invoice.payment_date ? new Date(invoice.payment_date) : undefined,
+          amount: parseFloat(invoice.amount),
+          tax_amount: parseFloat(invoice.tax_amount || 0),
+          total_amount: parseFloat(invoice.total_amount),
+          subtotal: parseFloat(invoice.amount),
+          discount: parseFloat(invoice.discount || 0),
+          status: invoice.status,
+          payment_method: invoice.payment_method,
+          client: {
+            id: invoice.client_id?.toString() || '',
+            name: invoice.client_name || '',
+            email: invoice.client_email || '',
+            phone: invoice.client_phone || ''
+          },
+          items: [],
+          created_at: new Date(invoice.created_at),
+          updated_at: new Date(invoice.updated_at)
+        }));
+      }
+      
+      return [];
     } catch (error) {
       console.error("Error fetching invoices:", error);
       toast.error("Erro ao buscar faturas");
-      throw error;
+      
+      // Em caso de erro, retornar array vazio em vez dos dados fictícios
+      return [];
     }
   },
 

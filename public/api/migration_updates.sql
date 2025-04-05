@@ -103,6 +103,18 @@ CREATE TABLE IF NOT EXISTS invoices (
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 
+-- Ensure invoice_items table exists
+CREATE TABLE IF NOT EXISTS invoice_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id INT NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  price DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+);
+
 -- Ensure checklists table exists
 CREATE TABLE IF NOT EXISTS checklists (
   id INT AUTO_INCREMENT PRIMARY KEY,

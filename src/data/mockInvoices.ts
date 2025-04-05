@@ -1,7 +1,7 @@
 
 import { Invoice } from '../models/invoice';
 
-// Mock data for development
+// Dados fictícios apenas para desenvolvimento - serão utilizados somente como fallback
 export const mockInvoices: Invoice[] = [
   {
     id: 'INV-001',
@@ -177,7 +177,8 @@ export const mockInvoices: Invoice[] = [
   },
 ];
 
-// Simulating a local storage to persist data during development
-let invoicesData: Invoice[] = [...mockInvoices];
+// Simulando armazenamento local para persistir dados durante o desenvolvimento
+// Não mais usado diretamente na aplicação - dados vêm do banco de dados
+let invoicesData: Invoice[] = [];
 
 export { invoicesData };
