@@ -47,4 +47,10 @@ export type InvoiceFormData = {
   payment_method?: string;
   notes?: string;
   client_id?: string;
+  items?: {
+    id: string;
+    description: string;
+    quantity: number;
+    price: number;
+  }[];
 };
