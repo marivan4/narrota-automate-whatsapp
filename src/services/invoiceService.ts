@@ -266,7 +266,7 @@ class InvoiceService {
   /**
    * Create a payment in Asaas for an invoice
    */
-  async createAsaasPayment(invoiceId: string, paymentData: any): Promise<any> {
+  async createAsaasPayment(invoice: Invoice, client: any): Promise<any> {
     try {
       if (this.useBackend) {
         const response = await fetch(`${this.apiURL}/asaas-payment.php`, {
@@ -275,8 +275,8 @@ class InvoiceService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            invoice_id: invoiceId,
-            ...paymentData
+            invoice_id: invoice.id,
+            client_id: client.id
           }),
         });
         
@@ -299,16 +299,16 @@ class InvoiceService {
       toast.success('Pagamento criado com sucesso! (Modo Offline)');
       return {
         id: uuidv4(),
-        invoiceId,
+        invoiceId: invoice.id,
         status: 'PENDING',
-        value: 100,
-        netValue: 97.5,
-        description: 'Pagamento simulado',
+        value: invoice.total_amount || 100,
+        netValue: (invoice.total_amount || 100) * 0.975,
+        description: `Pagamento para fatura #${invoice.invoice_number}`,
         billingType: 'BOLETO',
         dueDate: new Date(),
         paymentDate: null,
-        clientId: 'mock-client-id',
-        externalReference: invoiceId
+        clientId: client.id || 'mock-client-id',
+        externalReference: invoice.id
       };
     } catch (error) {
       console.error('Error in createAsaasPayment:', error);

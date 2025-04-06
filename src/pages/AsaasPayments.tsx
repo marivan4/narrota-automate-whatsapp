@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -149,9 +148,9 @@ const AsaasPayments = () => {
     city: '',
     state: '',
     zipCode: '',
-    role: 'CLIENT',
-    created_at: new Date(),
-    updated_at: new Date()
+    role: 'client', // Changed from 'CLIENT' to 'client'
+    createdAt: new Date(),
+    contracts: [] // Added missing required field
   });
 
   return (

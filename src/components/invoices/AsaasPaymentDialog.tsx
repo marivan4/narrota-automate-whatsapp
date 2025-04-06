@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -55,7 +54,7 @@ export function AsaasPaymentDialog({ invoice, client, onSuccess }: AsaasPaymentD
       console.log("Tipo de pagamento:", paymentType);
       console.log("Dados do cliente:", client);
       
-      const result = await invoiceService.createAsaasPayment(invoice, client, paymentType);
+      const result = await invoiceService.createAsaasPayment(invoice, client);
       console.log("Resultado da geração de pagamento:", result);
       
       setPaymentData(result);
