@@ -1,4 +1,3 @@
-
 import { Invoice, InvoiceFormData } from '@/models/invoice';
 import { mockInvoices, invoicesData } from '@/data/mockInvoices';
 import { v4 as uuidv4 } from 'uuid';
@@ -163,6 +162,11 @@ class InvoiceService {
     }
   }
 
+  // Alias for getInvoice to maintain compatibility with existing code
+  async getInvoiceById(id: string): Promise<Invoice | null> {
+    return this.getInvoice(id);
+  }
+
   /**
    * Create a new invoice
    */
@@ -255,6 +259,60 @@ class InvoiceService {
     } catch (error) {
       console.error('Error in createInvoice:', error);
       toast.error(`Falha ao criar fatura: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a payment in Asaas for an invoice
+   */
+  async createAsaasPayment(invoiceId: string, paymentData: any): Promise<any> {
+    try {
+      if (this.useBackend) {
+        const response = await fetch(`${this.apiURL}/asaas-payment.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            invoice_id: invoiceId,
+            ...paymentData
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          toast.success('Pagamento criado com sucesso!');
+          return data.payment;
+        } else {
+          console.error('Error creating payment:', data.message);
+          throw new Error(data.message || 'Failed to create payment');
+        }
+      }
+      
+      // Mock creation if backend is not used
+      toast.success('Pagamento criado com sucesso! (Modo Offline)');
+      return {
+        id: uuidv4(),
+        invoiceId,
+        status: 'PENDING',
+        value: 100,
+        netValue: 97.5,
+        description: 'Pagamento simulado',
+        billingType: 'BOLETO',
+        dueDate: new Date(),
+        paymentDate: null,
+        clientId: 'mock-client-id',
+        externalReference: invoiceId
+      };
+    } catch (error) {
+      console.error('Error in createAsaasPayment:', error);
+      toast.error(`Falha ao criar pagamento: ${error.message}`);
       throw error;
     }
   }

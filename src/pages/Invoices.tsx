@@ -1,4 +1,3 @@
-
 // Import necessary components and dependencies
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -302,7 +301,7 @@ const Invoices = () => {
             )}
 
             {!dbConnected && !isLoading && (
-              <Alert className="mt-4" variant="warning">
+              <Alert className="mt-4" variant="default">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Aviso</AlertTitle>
                 <AlertDescription>

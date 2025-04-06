@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,7 +30,7 @@ const InvoiceEdit = () => {
     error
   } = useQuery({
     queryKey: ['invoice', id],
-    queryFn: () => invoiceService.getInvoiceById(id!),
+    queryFn: () => invoiceService.getInvoice(id!),
     enabled: !isNew && !!id,
   });
 
