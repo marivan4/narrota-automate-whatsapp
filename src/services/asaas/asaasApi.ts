@@ -160,3 +160,6 @@ export async function callAsaasApi<T>(endpoint: string, method: string = 'GET', 
     throw error;
   }
 }
+
+// Export for direct API access
+export const callApi = callAsaasApi;

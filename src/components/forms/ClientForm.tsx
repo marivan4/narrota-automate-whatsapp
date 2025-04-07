@@ -77,7 +77,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
           // Convertendo para o tipo correto de Cliente
           const clientData: Client = {
             id: "temp-id",
-            name: data.name, // Garantir que todos os campos obrigatórios estejam preenchidos
+            name: data.name,
             email: data.email,
             phone: data.phone,
             document: data.document,
@@ -86,8 +86,8 @@ const ClientForm: React.FC<ClientFormProps> = ({
             state: data.state,
             zipCode: data.zipCode,
             role: data.role,
-            created_at: new Date(),
-            updated_at: new Date()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           };
           await asaasService.createCustomer(clientData);
           toast.success("Cliente sincronizado com Asaas com sucesso!", { id: "sync-asaas" });

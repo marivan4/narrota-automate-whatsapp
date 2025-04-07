@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -149,8 +150,8 @@ const AsaasPayments = () => {
     state: '',
     zipCode: '',
     role: 'client',
-    created_at: new Date(),
-    updated_at: new Date()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   });
 
   return (

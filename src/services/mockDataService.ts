@@ -140,6 +140,7 @@ const initMockData = (): void => {
         notes: 'Pagamento da primeira mensalidade',
         created_at: new Date().toISOString(),
         client: {
+          id: 'c1',
           name: 'João Silva',
           email: 'joao.silva@example.com',
           phone: '(11) 98765-4321',
@@ -148,6 +149,7 @@ const initMockData = (): void => {
           city: 'São Paulo',
           state: 'SP',
           zipCode: '01234-567',
+          created_at: new Date().toISOString(),
         },
         items: [
           {
@@ -175,6 +177,7 @@ const initMockData = (): void => {
         notes: 'Aguardando pagamento',
         created_at: new Date().toISOString(),
         client: {
+          id: 'c2',
           name: 'Maria Oliveira',
           email: 'maria.oliveira@example.com',
           phone: '(11) 91234-5678',
@@ -183,6 +186,7 @@ const initMockData = (): void => {
           city: 'São Paulo',
           state: 'SP',
           zipCode: '01310-100',
+          created_at: new Date().toISOString(),
         },
         items: [
           {
