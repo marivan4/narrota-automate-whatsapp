@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, AlertCircle, Save, QrCode, Link, MessageSquare, Settings } from "lucide-react";
-import WhatsAppConnection from '@/components/shared/WhatsAppConnection';
+import WhatsAppQRCode from '@/components/shared/WhatsAppQRCode';
 import WhatsAppMessenger from '@/components/shared/WhatsAppMessenger';
 
 // Define interface for WhatsApp config type
@@ -31,6 +31,7 @@ const WhatsAppSettings: React.FC = () => {
   const { authState, isAuthorized } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'loading'>('disconnected');
   const [whatsappConfig, setWhatsappConfig] = useState<WhatsAppConfig>({
     instance: 'sistema-' + Math.random().toString(36).substring(2, 7),
     apiKey: '',
@@ -38,6 +39,7 @@ const WhatsAppSettings: React.FC = () => {
     status: 'disconnected'
   });
   const [showQrCode, setShowQrCode] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('https://evolutionapi.gpstracker-16.com.br');
 
   useEffect(() => {
     if (!authState.isAuthenticated) {
@@ -57,6 +59,9 @@ const WhatsAppSettings: React.FC = () => {
       const storedConfig = localStorage.getItem('whatsappConfig');
       if (storedConfig) {
         setWhatsappConfig(JSON.parse(storedConfig));
+        if (JSON.parse(storedConfig).connected) {
+          setConnectionState('connected');
+        }
       }
       setLoading(false);
     }, 1000);
@@ -87,6 +92,7 @@ const WhatsAppSettings: React.FC = () => {
           status: 'connected',
           lastConnected: new Date()
         }));
+        setConnectionState('connected');
         setLoading(false);
         toast.success('WhatsApp conectado com sucesso!');
       }, 3000);
@@ -108,6 +114,7 @@ const WhatsAppSettings: React.FC = () => {
         connected: false,
         status: 'disconnected',
       }));
+      setConnectionState('disconnected');
       setShowQrCode(false);
       toast.success('WhatsApp desconectado com sucesso!');
     } catch (error) {
@@ -116,6 +123,17 @@ const WhatsAppSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkConnection = () => {
+    setConnectionState('loading');
+    setTimeout(() => {
+      if (whatsappConfig.connected) {
+        setConnectionState('connected');
+      } else {
+        setConnectionState('disconnected');
+      }
+    }, 1500);
   };
 
   return (
@@ -243,17 +261,27 @@ const WhatsAppSettings: React.FC = () => {
                     </div>
 
                     {showQrCode && !whatsappConfig.connected && (
-                      <WhatsAppConnection
-                        instance={whatsappConfig.instance}
-                        apiKey={whatsappConfig.apiKey}
-                        onConnected={() => {
+                      <WhatsAppQRCode
+                        baseUrl={baseUrl}
+                        defaultApiKey={whatsappConfig.apiKey}
+                        defaultInstance={whatsappConfig.instance}
+                        onConnect={() => {
                           setWhatsappConfig(prev => ({
                             ...prev,
                             connected: true,
                             status: 'connected',
                             lastConnected: new Date()
                           }));
+                          setConnectionState('connected');
                           setShowQrCode(false);
+                        }}
+                        onConfigChange={(config) => {
+                          setWhatsappConfig(prev => ({
+                            ...prev,
+                            apiKey: config.apiKey,
+                            instance: config.instance
+                          }));
+                          setBaseUrl(config.baseUrl);
                         }}
                       />
                     )}
@@ -282,9 +310,11 @@ const WhatsAppSettings: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <WhatsAppMessenger
-                    enabled={whatsappConfig.connected}
-                    instance={whatsappConfig.instance}
+                    baseUrl={baseUrl}
                     apiKey={whatsappConfig.apiKey}
+                    instance={whatsappConfig.instance}
+                    connectionState={connectionState}
+                    onCheckConnection={checkConnection}
                   />
                 </CardContent>
               </Card>
@@ -304,17 +334,17 @@ const WhatsAppSettings: React.FC = () => {
                       <Label htmlFor="baseUrl">URL Base da API</Label>
                       <Input
                         id="baseUrl"
-                        value="https://evolutionapi.gpstracker-16.com.br"
-                        readOnly
-                        disabled
+                        value={baseUrl}
+                        onChange={(e) => setBaseUrl(e.target.value)}
+                        placeholder="URL do servidor da API"
                       />
                       <p className="text-sm text-muted-foreground">
-                        URL do serviço de API do WhatsApp (somente leitura)
+                        URL do serviço de API do WhatsApp
                       </p>
                     </div>
                   </div>
 
-                  <Alert variant="warning" className="mt-4">
+                  <Alert variant="destructive" className="mt-4">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Atenção</AlertTitle>
                     <AlertDescription>
