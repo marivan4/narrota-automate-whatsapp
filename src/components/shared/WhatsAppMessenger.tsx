@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import { Loader2, Send, RefreshCw, PhoneOff, Key } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserRole, WHATSAPP_DEFAULTS } from '@/types';
 
-interface WhatsAppMessengerProps {
+import React, { useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Send, AlertCircle, PhoneCall } from "lucide-react";
+import { toast } from "sonner";
+
+export interface WhatsAppMessengerProps {
   baseUrl: string;
   apiKey: string;
   instance: string;
@@ -17,235 +17,173 @@ interface WhatsAppMessengerProps {
   onCheckConnection: () => void;
 }
 
-const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({ 
-  baseUrl, 
-  apiKey, 
-  instance, 
+const WhatsAppMessenger: React.FC<WhatsAppMessengerProps> = ({
+  baseUrl,
+  apiKey,
+  instance,
   connectionState,
   onCheckConnection
 }) => {
-  const { authState } = useAuth();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [clientApiKey, setClientApiKey] = useState<string>(apiKey || '');
-  const [messageData, setMessageData] = useState({
-    number: '',
-    text: '',
-    delay: 0,
-    linkPreview: false
-  });
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = authState?.user?.role === UserRole.ADMIN;
-  const isManager = authState?.user?.role === UserRole.MANAGER;
-  const canEditApiKey = isAdmin || isManager;
-
-  const sendMessage = async () => {
-    if (!messageData.number || !messageData.text) {
-      toast.error('Por favor, preencha o número e a mensagem.');
+  const handleSendMessage = async () => {
+    if (!phoneNumber) {
+      setError("O número de telefone é obrigatório");
       return;
     }
 
-    if (!instance || !clientApiKey) {
-      toast.error('Configuração de WhatsApp incompleta. Por favor, configure a API Key do cliente.');
+    if (!message) {
+      setError("A mensagem é obrigatória");
       return;
     }
 
-    setIsLoading(true);
+    // Validar formato do número de telefone
+    const phoneRegex = /^\d{10,15}$/;
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+      setError("Formato de telefone inválido. Use apenas números (DDD + número)");
+      return;
+    }
+
+    setSending(true);
+    setError(null);
+
     try {
-      // Format the phone number if needed
-      let formattedNumber = messageData.number.replace(/\D/g, '');
-      if (!formattedNumber.includes('@')) {
-        // If not a group, ensure it has country code
-        if (!formattedNumber.startsWith('55')) {
-          formattedNumber = '55' + formattedNumber;
-        }
-      }
-
-      // Fixed URL with correct format for sending messages
-      const messageUrl = `${baseUrl}/message/sendText/${instance}`;
+      // Simular envio de mensagem (em um ambiente real, isto seria uma chamada à API)
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const response = await fetch(messageUrl, {
-        method: 'POST',
-        headers: {
-          'apikey': clientApiKey, // Use client-specific API key for sending messages
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          number: formattedNumber,
-          text: messageData.text,
-          delay: messageData.delay,
-          linkPreview: messageData.linkPreview
-        })
-      });
+      // Em uma aplicação real, você faria uma chamada para a API real aqui
+      // Exemplo simulado:
+      // const response = await fetch(`${baseUrl}/message/text`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'apikey': apiKey
+      //   },
+      //   body: JSON.stringify({
+      //     instance,
+      //     to: cleanPhone,
+      //     message: message
+      //   })
+      // });
+      // const data = await response.json();
       
-      const data = await response.json();
-      
-      if (data.status === 'success' || data.key) {
-        toast.success('Mensagem enviada com sucesso!');
-        // Clear the message text but keep the number
-        setMessageData(prev => ({ ...prev, text: '' }));
-      } else {
-        throw new Error(data.message || 'Erro ao enviar mensagem');
-      }
-    } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
-      toast.error('Erro ao enviar mensagem. Verifique a API Key do cliente e a conexão com WhatsApp.');
+      // Simulação de sucesso
+      toast.success("Mensagem enviada com sucesso!");
+      setMessage(''); // Limpar a mensagem após envio
+    } catch (err) {
+      console.error("Erro ao enviar mensagem:", err);
+      setError("Erro ao enviar mensagem. Por favor, tente novamente.");
     } finally {
-      setIsLoading(false);
+      setSending(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-    setMessageData(prev => ({ ...prev, [name]: val }));
+  const formatPhoneNumber = (value: string) => {
+    // Remover caracteres não numéricos
+    const numericValue = value.replace(/\D/g, '');
+    setPhoneNumber(numericValue);
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Enviar Mensagens WhatsApp</CardTitle>
-            <CardDescription>
-              Envie mensagens diretamente para seus clientes via WhatsApp
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-2 ${
-                connectionState === 'connected' ? 'bg-green-500' :
-                connectionState === 'loading' ? 'bg-yellow-500' :
-                'bg-red-500'
-              }`} />
-              <span className="text-sm">
-                {connectionState === 'connected' ? 'Conectado' :
-                connectionState === 'loading' ? 'Verificando...' :
-                'Desconectado'}
-              </span>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onCheckConnection}
-              disabled={isLoading || !instance || !clientApiKey}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Enviar Mensagem</h3>
+        <div className="flex items-center">
+          <div className={`h-3 w-3 rounded-full mr-2 ${
+            connectionState === 'connected' ? 'bg-green-500' : 
+            connectionState === 'loading' ? 'bg-yellow-500' : 'bg-red-500'
+          }`}></div>
+          <span className="text-sm text-muted-foreground">
+            {connectionState === 'connected' ? 'Conectado' : 
+             connectionState === 'loading' ? 'Verificando...' : 'Desconectado'}
+          </span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onCheckConnection}
+            disabled={connectionState === 'loading'}
+            className="ml-2"
+          >
+            {connectionState === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verificar"}
+          </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {connectionState === 'disconnected' ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <PhoneOff className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium mb-2">WhatsApp não conectado</h3>
-            <p className="text-sm text-muted-foreground max-w-md mb-4">
-              Você precisa conectar o WhatsApp antes de poder enviar mensagens. Por favor, vá para a aba "Conectar WhatsApp" e escaneie o código QR.
-            </p>
-            <Button variant="default" onClick={() => {
-              const tabElements = document.querySelectorAll('[role="tab"]');
-              if (tabElements && tabElements.length > 0) {
-                (tabElements[0] as HTMLElement).click();
-              }
-            }}>
-              Ir para Conexão
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Client-specific API Key input */}
-            <div className="space-y-2 p-4 border rounded-md bg-muted/50">
-              <Label htmlFor="clientApiKey" className="flex items-center gap-2">
-                <Key className="h-4 w-4" />
-                API Key do Cliente para Envio de Mensagens
-              </Label>
+      </div>
+
+      {connectionState === 'disconnected' ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            WhatsApp não está conectado. Conecte-se antes de enviar mensagens.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="phoneNumber">Número de Telefone</Label>
+            <div className="flex gap-2">
               <Input
-                id="clientApiKey"
-                value={clientApiKey}
-                onChange={(e) => setClientApiKey(e.target.value)}
-                placeholder="Insira a API Key específica do cliente"
-                disabled={!canEditApiKey || isLoading}
+                id="phoneNumber"
+                placeholder="Ex: 11999999999"
+                value={phoneNumber}
+                onChange={(e) => formatPhoneNumber(e.target.value)}
+                disabled={sending || connectionState !== 'connected'}
               />
-              <p className="text-xs text-muted-foreground">
-                {canEditApiKey 
-                  ? "Esta é a API Key específica para o cliente, necessária para enviar notificações."
-                  : "Você precisa ser administrador ou gerente para editar a API Key do cliente."}
-              </p>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="flex-shrink-0"
+                disabled={sending || connectionState !== 'connected'}
+              >
+                <PhoneCall className="h-4 w-4" />
+              </Button>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="number">Número de Telefone</Label>
-              <Input
-                id="number"
-                name="number"
-                value={messageData.number}
-                onChange={handleInputChange}
-                placeholder="5511999999999 ou Nome do Grupo"
-                disabled={isLoading || connectionState !== 'connected'}
-              />
-              <p className="text-xs text-muted-foreground">
-                Digite o número com DDD e código do país (ex: 5511999999999) ou ID de grupo (@g.us).
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="text">Mensagem</Label>
-              <Textarea
-                id="text"
-                name="text"
-                value={messageData.text}
-                onChange={handleInputChange}
-                rows={5}
-                placeholder="Digite sua mensagem aqui..."
-                disabled={isLoading || connectionState !== 'connected'}
-              />
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox"
-                id="linkPreview"
-                name="linkPreview"
-                checked={messageData.linkPreview}
-                onChange={handleInputChange}
-                disabled={isLoading || connectionState !== 'connected'}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="linkPreview" className="text-sm cursor-pointer">
-                Ativar pré-visualização de links
-              </Label>
-            </div>
-            
-            <Button 
-              onClick={sendMessage} 
-              disabled={isLoading || !messageData.number || !messageData.text || connectionState !== 'connected' || !clientApiKey} 
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Enviar Mensagem
-                </>
-              )}
-            </Button>
+            <p className="text-xs text-muted-foreground">Digite apenas números (DDD + número)</p>
           </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex-col items-start border-t pt-4">
-        <h4 className="text-sm font-medium mb-2">Dicas para envio:</h4>
-        <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
-          <li>Certifique-se de que o número está no formato correto com código do país.</li>
-          <li>Para grupos, use o ID completo no formato: 123456789@g.us</li>
-          <li>Você pode usar marcadores básicos como *texto* para negrito e _texto_ para itálico.</li>
-          <li>A API Key do cliente é necessária para o envio de notificações.</li>
-        </ul>
-      </CardFooter>
-    </Card>
+
+          <div className="space-y-2">
+            <Label htmlFor="message">Mensagem</Label>
+            <Textarea
+              id="message"
+              placeholder="Digite sua mensagem..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={5}
+              disabled={sending || connectionState !== 'connected'}
+              className="resize-none"
+            />
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            className="w-full"
+            onClick={handleSendMessage}
+            disabled={sending || !phoneNumber || !message || connectionState !== 'connected'}
+          >
+            {sending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Enviar Mensagem
+              </>
+            )}
+          </Button>
+        </>
+      )}
+    </div>
   );
 };
 

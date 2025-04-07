@@ -89,6 +89,10 @@ const router = createBrowserRouter([
     element: <WhatsAppSettings />,
   },
   {
+    path: '/whatsapp-settings',
+    element: <WhatsAppSettings />,
+  },
+  {
     path: '/whatsapp/connect',
     element: <WhatsAppConnect />,
   },
