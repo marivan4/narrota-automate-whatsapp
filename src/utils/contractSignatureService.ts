@@ -1,4 +1,3 @@
-
 import { ContractFormValues } from '@/components/shared/contract/types';
 import { whatsappService } from './whatsappService';
 import { toast } from "sonner";
@@ -59,17 +58,10 @@ export const contractSignatureService = {
         + `Equipe de Rastreamento`;
       
       // Send message via WhatsApp
-      await whatsappService.sendMessage(
-        instance, 
-        apiKey, 
-        {
-          to: formattedNumber,
-          message: message,
-          options: {
-            delay: 1200,
-            presence: 'composing'
-          }
-        }
+      await whatsappService.sendTextMessage(
+        { instance, apiKey, baseUrl },
+        formattedNumber,
+        message
       );
       
       return true;

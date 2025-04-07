@@ -86,10 +86,11 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
         `Método de pagamento: ${invoice.payment_method || 'A definir'}\n\n` +
         `Para mais informações, entre em contato conosco.`;
 
-      await whatsappService.sendMessage(whatsappConfig.instance, whatsappConfig.apiKey, {
-        to: invoice.client.phone,
-        message: message
-      });
+      await whatsappService.sendTextMessage(
+        { instance: whatsappConfig.instance, apiKey: whatsappConfig.apiKey },
+        invoice.client.phone,
+        message
+      );
 
       toast.success('Mensagem enviada com sucesso!');
     } catch (error) {
