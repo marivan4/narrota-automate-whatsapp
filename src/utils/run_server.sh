@@ -1,27 +1,26 @@
 
 #!/bin/bash
-# Script para executar o servidor web Python
+# Script to run the React application server
 
-# Conferir se o Python está instalado
+# Check if Python is installed
 if ! command -v python3 &> /dev/null
 then
-    echo "Python 3 não está instalado. Por favor, instale-o primeiro."
+    echo "Python 3 is not installed. Please install it first."
     exit 1
 fi
 
-# Conferir se o módulo psutil está instalado
-if ! python3 -c "import psutil" &> /dev/null
-then
-    echo "Instalando o módulo psutil necessário..."
-    pip3 install psutil || {
-        echo "Falha ao instalar psutil. Tente manualmente: pip3 install psutil"
+# Make the script executable
+chmod +x "$(dirname "$0")/clean_and_serve.py"
+
+# Build the React app if the dist directory doesn't exist
+if [ ! -d "$(dirname "$0")/../../dist" ]; then
+    echo "Building React application..."
+    npm run build || {
+        echo "Failed to build React application. Make sure you have run 'npm install' first."
         exit 1
     }
 fi
 
-# Tornar o script Python executável
-chmod +x clean_and_serve.py
-
-# Executar o script
-echo "Iniciando o servidor web..."
-python3 clean_and_serve.py
+# Run the server
+echo "Starting the React application server..."
+python3 "$(dirname "$0")/clean_and_serve.py"
