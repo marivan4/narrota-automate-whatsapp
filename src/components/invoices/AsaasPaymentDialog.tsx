@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -66,7 +67,10 @@ export function AsaasPaymentDialog({ invoice, client, onSuccess }: AsaasPaymentD
       toast.success(`Pagamento via ${paymentType === 'PIX' ? 'PIX' : 'Boleto'} gerado com sucesso!`);
     } catch (error) {
       console.error("Erro ao gerar pagamento:", error);
-      setError(error instanceof Error ? error.message : "Erro ao gerar pagamento. Verifique os dados e tente novamente.");
+      // Fix the instanceof check by using a type guard instead
+      setError(error && typeof error === 'object' && 'message' in error 
+        ? (error as Error).message 
+        : "Erro ao gerar pagamento. Verifique os dados e tente novamente.");
       toast.error("Erro ao gerar pagamento. Verifique os dados e tente novamente.");
     } finally {
       setIsLoading(false);

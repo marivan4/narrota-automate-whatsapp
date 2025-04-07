@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,16 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+
+  // Format date helper function
+  const formatDateString = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr), 'dd/MM/yyyy', { locale: ptBR });
+    } catch (error) {
+      console.error('Invalid date format:', dateStr);
+      return 'Data inválida';
+    }
   };
 
   // Status badge renderer
@@ -82,7 +93,7 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
         `Prezado(a) ${invoice.client.name},\n\n` +
         `Informamos que sua fatura no valor de ${formatCurrency(invoice.total_amount)} ` +
         `está ${invoice.status === 'overdue' ? 'atrasada' : 'disponível para pagamento'}.\n\n` +
-        `Vencimento: ${format(invoice.due_date, 'dd/MM/yyyy', { locale: ptBR })}\n` +
+        `Vencimento: ${formatDateString(invoice.due_date)}\n` +
         `Método de pagamento: ${invoice.payment_method || 'A definir'}\n\n` +
         `Para mais informações, entre em contato conosco.`;
 
@@ -128,8 +139,11 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
     items: invoice.items || [],
     subtotal: invoice.subtotal || invoice.amount || 0,
     discount: invoice.discount || 0,
-    created_at: invoice.created_at || new Date(),
-    updated_at: invoice.updated_at || new Date()
+    // Convert date objects to strings if needed
+    issue_date: typeof invoice.issue_date === 'string' ? invoice.issue_date : invoice.issue_date.toISOString(),
+    due_date: typeof invoice.due_date === 'string' ? invoice.due_date : invoice.due_date.toISOString(),
+    created_at: typeof invoice.created_at === 'string' ? invoice.created_at : new Date().toISOString(),
+    updated_at: typeof invoice.updated_at === 'string' ? invoice.updated_at : new Date().toISOString()
   };
 
   return (
@@ -158,20 +172,20 @@ export function InvoiceDetails({ invoice, onEdit, onDelete, whatsappConfig }: In
               <div className="flex justify-between">
                 <span className="text-sm">Data de Emissão:</span>
                 <span className="text-sm font-medium">
-                  {format(invoice.issue_date, 'dd/MM/yyyy', { locale: ptBR })}
+                  {formatDateString(invoice.issue_date)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm">Data de Vencimento:</span>
                 <span className="text-sm font-medium">
-                  {format(invoice.due_date, 'dd/MM/yyyy', { locale: ptBR })}
+                  {formatDateString(invoice.due_date)}
                 </span>
               </div>
               {invoice.payment_date && (
                 <div className="flex justify-between">
                   <span className="text-sm">Data de Pagamento:</span>
                   <span className="text-sm font-medium">
-                    {format(invoice.payment_date, 'dd/MM/yyyy', { locale: ptBR })}
+                    {formatDateString(invoice.payment_date)}
                   </span>
                 </div>
               )}

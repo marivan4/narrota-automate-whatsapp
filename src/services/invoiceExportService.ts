@@ -21,9 +21,14 @@ export const invoiceExportService = {
     ].join(',');
 
     // Format dates
-    const formatDate = (date?: Date) => {
-      if (!date) return '';
-      return date.toLocaleDateString('pt-BR');
+    const formatDate = (dateStr?: string) => {
+      if (!dateStr) return '';
+      try {
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+      } catch (e) {
+        console.error("Invalid date:", dateStr);
+        return '';
+      }
     };
 
     // Create CSV rows

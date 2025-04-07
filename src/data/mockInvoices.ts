@@ -1,3 +1,4 @@
+
 import { Invoice } from '../models/invoice';
 
 // Mock invoices data for development and fallback purposes
@@ -7,15 +8,15 @@ export const mockInvoices: Invoice[] = [
     id: 'INV-001',
     invoice_number: 'INV-001',
     contract_id: 'CONT-001',
-    issue_date: new Date(2023, 9, 15),
-    due_date: new Date(2023, 10, 15),
+    issue_date: '2023-10-15T00:00:00.000Z',
+    due_date: '2023-11-15T00:00:00.000Z',
     amount: 1500.0,
     tax_amount: 0,
     total_amount: 1500.0,
     subtotal: 1500.0,
     discount: 0.0,
     status: 'paid',
-    payment_date: new Date(2023, 10, 10),
+    payment_date: '2023-11-10T00:00:00.000Z',
     payment_method: 'Cartão de Crédito',
     client: {
       id: 'CUST-001',
@@ -36,15 +37,15 @@ export const mockInvoices: Invoice[] = [
         price: 1500.0
       }
     ],
-    created_at: new Date(2023, 9, 15),
-    updated_at: new Date(2023, 9, 15),
+    created_at: '2023-10-15T00:00:00.000Z',
+    updated_at: '2023-10-15T00:00:00.000Z',
   },
   {
     id: 'INV-002',
     invoice_number: 'INV-002',
     contract_id: 'CONT-002',
-    issue_date: new Date(2023, 10, 20),
-    due_date: new Date(2023, 11, 20),
+    issue_date: '2023-11-20T00:00:00.000Z',
+    due_date: '2023-12-20T00:00:00.000Z',
     amount: 750.5,
     tax_amount: 0,
     total_amount: 750.5,
@@ -70,15 +71,15 @@ export const mockInvoices: Invoice[] = [
         price: 750.5
       }
     ],
-    created_at: new Date(2023, 10, 20),
-    updated_at: new Date(2023, 10, 20),
+    created_at: '2023-11-20T00:00:00.000Z',
+    updated_at: '2023-11-20T00:00:00.000Z',
   },
   {
     id: 'INV-003',
     invoice_number: 'INV-003',
     contract_id: 'CONT-003',
-    issue_date: new Date(2023, 8, 10),
-    due_date: new Date(2023, 9, 10),
+    issue_date: '2023-09-10T00:00:00.000Z',
+    due_date: '2023-10-10T00:00:00.000Z',
     amount: 2250.0,
     tax_amount: 100.0,
     total_amount: 2350.0,
@@ -104,15 +105,15 @@ export const mockInvoices: Invoice[] = [
         price: 2250.0
       }
     ],
-    created_at: new Date(2023, 8, 10),
-    updated_at: new Date(2023, 8, 10),
+    created_at: '2023-09-10T00:00:00.000Z',
+    updated_at: '2023-09-10T00:00:00.000Z',
   },
   {
     id: 'INV-004',
     invoice_number: 'INV-004',
     contract_id: 'CONT-004',
-    issue_date: new Date(2023, 11, 5),
-    due_date: new Date(2023, 12, 5),
+    issue_date: '2023-12-05T00:00:00.000Z',
+    due_date: '2024-01-05T00:00:00.000Z',
     amount: 450.25,
     tax_amount: 30.0,
     total_amount: 480.25,
@@ -138,15 +139,15 @@ export const mockInvoices: Invoice[] = [
         price: 450.25
       }
     ],
-    created_at: new Date(2023, 11, 5),
-    updated_at: new Date(2023, 11, 5),
+    created_at: '2023-12-05T00:00:00.000Z',
+    updated_at: '2023-12-05T00:00:00.000Z',
   },
   {
     id: 'INV-005',
     invoice_number: 'INV-005',
     contract_id: 'CONT-005',
-    issue_date: new Date(2023, 10, 30),
-    due_date: new Date(2023, 11, 30),
+    issue_date: '2023-11-30T00:00:00.000Z',
+    due_date: '2023-12-30T00:00:00.000Z',
     amount: 1200.75,
     tax_amount: 75.0,
     total_amount: 1275.75,
@@ -172,8 +173,8 @@ export const mockInvoices: Invoice[] = [
         price: 1200.75
       }
     ],
-    created_at: new Date(2023, 10, 30),
-    updated_at: new Date(2023, 10, 30),
+    created_at: '2023-11-30T00:00:00.000Z',
+    updated_at: '2023-11-30T00:00:00.000Z',
   },
 ];
 

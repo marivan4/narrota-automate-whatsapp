@@ -1,4 +1,3 @@
-
 import { Invoice, Client, Contract, Vehicle, User, WhatsAppConfig } from '@/models';
 
 /**
@@ -128,7 +127,6 @@ const initMockData = (): void => {
         id: 'i1',
         invoice_number: 'FAT-2023-001',
         contract_id: 'ct1',
-        client_id: 'c1',
         issue_date: new Date(2023, 0, 5).toISOString(),
         due_date: new Date(2023, 0, 15).toISOString(),
         amount: 100,
@@ -161,12 +159,12 @@ const initMockData = (): void => {
         ],
         subtotal: 100,
         discount: 0,
+        updated_at: new Date().toISOString()
       },
       {
         id: 'i2',
         invoice_number: 'FAT-2023-002',
         contract_id: 'ct2',
-        client_id: 'c2',
         issue_date: new Date(2023, 1, 5).toISOString(),
         due_date: new Date(2023, 1, 15).toISOString(),
         amount: 150,
@@ -198,6 +196,7 @@ const initMockData = (): void => {
         ],
         subtotal: 150,
         discount: 0,
+        updated_at: new Date().toISOString()
       },
     ];
     storeData('invoices', invoices);

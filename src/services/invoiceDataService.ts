@@ -75,8 +75,8 @@ export const invoiceDataService = {
         ],
         subtotal: data.amount, // Adding required subtotal
         discount: 0, // Adding required discount
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       invoicesData.push(newInvoice);
@@ -114,7 +114,7 @@ export const invoiceDataService = {
         ...(data.notes !== undefined && { notes: data.notes }),
         total_amount: (data.amount !== undefined ? data.amount : invoicesData[index].amount) + 
                       (data.tax_amount !== undefined ? data.tax_amount : invoicesData[index].tax_amount),
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       };
 
       invoicesData[index] = updatedInvoice;

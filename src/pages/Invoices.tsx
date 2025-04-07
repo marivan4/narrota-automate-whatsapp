@@ -131,10 +131,11 @@ const Invoices = () => {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
     try {
-      return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
     } catch (e) {
+      console.error("Invalid date:", dateString);
       return 'Data inválida';
     }
   };
